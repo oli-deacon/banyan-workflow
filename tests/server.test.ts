@@ -406,3 +406,131 @@ test("Mongo list projects out detail and activity fields at the database", async
   } as unknown as Collection<RecordCard>;
   assert.deepEqual(await new MongoStore(collection).list(BOARD_ID), []);
 });
+
+test("stop condition API create/edit/read roundtrip, clearing and legacy-client preservation", async () => {
+  const store = new MemoryStore();
+  const initial = {
+    ...card,
+    stopCondition: "Pause for interface review.\nKeep the draft.",
+  };
+  const created = await handle(
+    request("POST", { card: initial }),
+    BOARD_ID,
+    undefined,
+    store,
+  );
+  assert.equal(created.status, 201);
+  assert.equal(
+    (await created.json()).card.stopCondition,
+    initial.stopCondition,
+  );
+  const changed = {
+    ...initial,
+    stopCondition: "Pause after two failed attempts.",
+  };
+  const edited = await handle(
+    request("PATCH", { card: changed, expectedVersion: 1 }),
+    BOARD_ID,
+    card.id,
+    store,
+  );
+  assert.equal(edited.status, 200);
+  assert.deepEqual((await edited.json()).card.activity.at(-1).fields, [
+    "stopCondition",
+  ]);
+  const legacy = { ...card, summary: "Older client edit" } as Partial<
+    typeof card
+  >;
+  delete legacy.stopCondition;
+  const oldEdit = await handle(
+    request("PATCH", { card: legacy, expectedVersion: 2 }),
+    BOARD_ID,
+    card.id,
+    store,
+  );
+  assert.equal(oldEdit.status, 200);
+  assert.equal(
+    (await oldEdit.json()).card.stopCondition,
+    changed.stopCondition,
+  );
+  const read = await handle(request("GET"), BOARD_ID, card.id, store);
+  assert.equal((await read.json()).card.stopCondition, changed.stopCondition);
+  const clear = await handle(
+    request("PATCH", {
+      card: { ...card, stopCondition: "" },
+      expectedVersion: 3,
+    }),
+    BOARD_ID,
+    card.id,
+    store,
+  );
+  assert.equal(clear.status, 200);
+  assert.equal((await clear.json()).card.stopCondition, "");
+});
+
+test("stop condition validation accepts omission and boundary length, rejects invalid values", async () => {
+  const legacy = { ...card } as Partial<typeof card>;
+  delete legacy.stopCondition;
+  assert.equal(parseCard(legacy).stopCondition, "");
+  assert.equal(
+    parseCard({ ...card, stopCondition: "x".repeat(20000) }).stopCondition
+      .length,
+    20000,
+  );
+  const store = new MemoryStore();
+  for (const stopCondition of [null, 42, [], {}, true, "x".repeat(20001)]) {
+    const response = await handle(
+      request("POST", { card: { ...card, stopCondition } }),
+      BOARD_ID,
+      undefined,
+      store,
+    );
+    assert.equal(response.status, 400);
+  }
+  const created = await handle(
+    request("POST", { card: legacy }),
+    BOARD_ID,
+    undefined,
+    store,
+  );
+  assert.equal(created.status, 201);
+  assert.equal((await created.json()).card.stopCondition, "");
+});
+
+test("Mongo legacy reads normalize without writes and edits persist stop condition with version safety", async () => {
+  const original = await new MemoryStore().create(BOARD_ID, card);
+  let saved = { ...original } as RecordCard;
+  delete (saved as Partial<RecordCard>).stopCondition;
+  let writes = 0;
+  const collection = {
+    findOne: async () => structuredClone(saved),
+    findOneAndUpdate: async (
+      filter: { version: number },
+      update: { $set: RecordCard },
+    ) => {
+      if (filter.version !== saved.version) return null;
+      writes++;
+      saved = structuredClone(update.$set);
+      return structuredClone(saved);
+    },
+  } as unknown as Collection<RecordCard>;
+  const store = new MongoStore(collection);
+  assert.equal((await store.get(BOARD_ID, card.id)).stopCondition, "");
+  assert.equal(writes, 0);
+  assert.equal(Object.hasOwn(saved, "stopCondition"), false);
+  const noop = await store.update(BOARD_ID, card.id, 1, card);
+  assert.equal(noop.version, 1);
+  assert.equal(noop.activity.length, 1);
+  const updated = await store.update(BOARD_ID, card.id, 1, {
+    ...card,
+    stopCondition: "Pause if evidence is missing.",
+  });
+  assert.equal(updated.stopCondition, "Pause if evidence is missing.");
+  assert.equal(saved.stopCondition, updated.stopCondition);
+  assert.equal(updated.version, 2);
+  assert.deepEqual(updated.activity.at(-1)?.fields, ["stopCondition"]);
+  await assert.rejects(
+    store.update(BOARD_ID, card.id, 1, card),
+    (e) => e instanceof ApiError && e.status === 409,
+  );
+});

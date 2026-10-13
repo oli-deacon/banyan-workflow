@@ -22,6 +22,11 @@ const detailFields = [
     "Acceptance criteria",
     "What must be true for this work to be complete?",
   ],
+  [
+    "stopCondition",
+    "Stop Condition",
+    "When should work pause and request human input?",
+  ],
   ["progress", "Progress & blockers", "What changed? What needs attention?"],
   ["outputs", "Outputs", "Decisions, deliverables and results."],
 ] as const;
@@ -245,6 +250,7 @@ export function CardEditor({
                   "context",
                   "references",
                   "constraints",
+                  "stopCondition",
                   "progress",
                   "outputs",
                 ] as const
@@ -337,7 +343,10 @@ export function CardEditor({
                 {(
                   [
                     ["Purpose", ["objective", "acceptance"]],
-                    ["Context", ["context", "references", "constraints"]],
+                    [
+                      "Context",
+                      ["context", "references", "constraints", "stopCondition"],
+                    ],
                     ["Progress", ["progress", "outputs"]],
                   ] as const
                 ).map(([group, keys]) => (
@@ -352,6 +361,14 @@ export function CardEditor({
                           <label key={key}>
                             {label}
                             <textarea
+                              aria-label={
+                                key === "stopCondition" ? label : undefined
+                              }
+                              aria-describedby={
+                                key === "stopCondition"
+                                  ? "stop-condition-hint"
+                                  : undefined
+                              }
                               rows={key === "references" ? 2 : 3}
                               maxLength={20000}
                               value={draft[key]}
@@ -360,6 +377,16 @@ export function CardEditor({
                               }
                               placeholder={placeholder}
                             />
+                            {key === "stopCondition" && (
+                              <span
+                                id="stop-condition-hint"
+                                className="field-hint"
+                              >
+                                Defines when to pause and request human input.
+                                This is workflow context; it does not run or
+                                stop an agent.
+                              </span>
+                            )}
                             {key === "references" && (
                               <span className="field-hint">
                                 One full http:// or https:// URL per line.

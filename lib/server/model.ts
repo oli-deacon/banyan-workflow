@@ -1,4 +1,10 @@
-import { Card, FIELDS, isStatus, validateCard } from "../board";
+import {
+  Card,
+  FIELDS,
+  isStatus,
+  validateCard,
+  withStopCondition,
+} from "../board";
 import { publicDemo } from "./access";
 export const BOARD_ID = "modernization";
 export const DATABASE = "banyan_workflow";
@@ -37,7 +43,8 @@ export function exact(value: Record<string, unknown>, keys: string[]) {
     throw new ApiError(400, "Unknown request field.");
 }
 export function parseCard(value: unknown): Card {
-  const item = object(value);
+  const item = { ...object(value) };
+  if (!("stopCondition" in item)) item.stopCondition = "";
   exact(item, ["id", "status", "sample", ...FIELDS]);
   if (
     typeof item.id !== "string" ||
@@ -64,7 +71,7 @@ export function newRecord(
 ): RecordCard {
   const at = new Date().toISOString();
   return {
-    ...card,
+    ...withStopCondition(card),
     boardId,
     version: 1,
     createdAt: at,
@@ -88,6 +95,7 @@ export function revision(
   current: RecordCard,
   patch: Card | { status: Card["status"] },
 ): RecordCard {
+  current = withStopCondition(current);
   const at = new Date().toISOString();
   const fields = Object.keys(patch).filter(
     (key) =>

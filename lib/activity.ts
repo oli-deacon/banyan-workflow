@@ -7,6 +7,7 @@ const fieldNames: Record<string, string> = {
   context: "input context",
   references: "reference links",
   constraints: "constraints",
+  stopCondition: "stop condition",
   acceptance: "acceptance criteria",
   progress: "progress & blockers",
   outputs: "outputs",

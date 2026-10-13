@@ -10,6 +10,7 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
+        launchOptions: { executablePath: process.env.BANYAN_CHROMIUM_PATH },
         viewport: { width: 1440, height: 1000 },
       },
     },

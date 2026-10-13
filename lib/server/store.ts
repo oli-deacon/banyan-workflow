@@ -1,6 +1,6 @@
 import { MongoClient, type Collection } from "mongodb";
 import { summarizeCard, type CardSummary } from "../card-types";
-import { type Card, samples } from "../board";
+import { type Card, samples, withStopCondition } from "../board";
 import { collectionName, publicDemo } from "./access";
 import {
   ApiError,
@@ -103,7 +103,7 @@ export class MongoStore implements Store {
       { projection: { _id: 0 } },
     );
     if (!card) throw missing();
-    return card;
+    return withStopCondition(card);
   }
   async create(boardId: string, card: Card, seed = false) {
     const record = newRecord(card, boardId, seed);
@@ -166,7 +166,7 @@ export class MongoStore implements Store {
       { returnDocument: "after", projection: { _id: 0 } },
     );
     if (!saved) throw conflict();
-    return saved;
+    return withStopCondition(saved);
   }
 }
 export async function seed(store: Store) {

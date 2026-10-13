@@ -143,6 +143,9 @@ export async function handle(
         if ("status" in input)
           throw new ApiError(400, "Choose one update type.");
         patch = parseCard(input.card);
+        // An older client omitting the new field must not erase saved context.
+        if (!("stopCondition" in object(input.card)))
+          patch.stopCondition = (await store.get(board, id)).stopCondition ?? "";
         if (patch.id !== id) throw new ApiError(400, "Card ID does not match.");
       } else {
         if (!isStatus(input.status))

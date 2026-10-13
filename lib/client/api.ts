@@ -1,4 +1,4 @@
-import { FIELDS, type Card, type Status } from "../board";
+import { FIELDS, withStopCondition, type Card, type Status } from "../board";
 import type { BoardResponse, CardResponse, EditorCard } from "../card-types";
 
 const API = "/api/boards/modernization/cards";
@@ -47,7 +47,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
 export const loadBoard = () => request<BoardResponse>(API);
 export const loadCard = async (id: string) =>
-  (await request<CardResponse>(`${API}/${encodeURIComponent(id)}`)).card;
+  withStopCondition(
+    (await request<CardResponse>(`${API}/${encodeURIComponent(id)}`)).card,
+  );
 
 export async function saveCard(card: EditorCard) {
   const existing = card.version !== undefined;
