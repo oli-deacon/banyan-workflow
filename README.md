@@ -4,6 +4,8 @@ For new coding sessions, start with [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) for
 
 A Next.js / React / TypeScript workflow board with a server-side API and the official MongoDB Node driver. The exact fixed columns remain **To Do**, **In Progress**, **Ready for Review**, **Done**. Cards support creation, editing, desktop drag/drop, a keyboard/touch Move control, a reading-first expandable detail panel, an explicit Edit action, and activity history. New cards start with title, summary and status, with optional grouped details. Save and move notifications are visible; moves offer version-checked Undo so newer changes cannot be overwritten.
 
+Board cards include a cursor-following border glow adapted from [React Bits Border Glow](https://reactbits.dev/components/border-glow), with a static keyboard-focus treatment and reduced-motion support. Attribution and license: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
 ## Shared public demo
 
 Live demo: https://banyan-workflow.vercel.app. Browser create/edit/move and shared persistence were verified on 13 October 2026; details are recorded in `QA.md`.
