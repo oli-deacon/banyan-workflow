@@ -1,3 +1,11 @@
+## Card Border Glow — 14 October 2026
+
+- Adapted React Bits Border Glow for the existing light board cards: cursor-directed mesh border, soft outer glow and restrained edge fill. Preserved card controls, desktop drag handlers, native focus outlines and responsive geometry. Upstream attribution/license retained in `THIRD_PARTY_NOTICES.md`; no runtime dependency added.
+- `npm test`: 32 passing; `npm run test:browser` with the system Chromium override: 12 passing. Lint, typecheck and production build passed.
+- Focused isolated-memory browser QA verified cursor direction changes, increased edge intensity, reset after leaving, keyboard focus/opening, Move and Undo, preference changes to reduced motion, touch opening and 390px layout without horizontal overflow. Desktop 1440px idle/hover screenshots and the mobile screenshot were inspected. No browser page errors were captured.
+- Cursor tracking is disabled for touch and reduced motion. A static mesh border accompanies focus; decorative layers cannot intercept controls. Pointer updates are batched to one animation frame and canceled on leave, drag and unmount.
+- Browser checks modified only the memory mock. No MongoDB or hosted card records were changed. Safari, Firefox and physical-device checks were not performed.
+
 ## Stop Condition — 13 October 2026
 
 - Added optional Stop Condition to the shared model, create/edit Context, reading view, activity labels, typed client payloads, strict API validation and MongoDB serialization. Empty legacy records remain readable/editable; older clients omitting the field preserve existing values. This is descriptive context only.

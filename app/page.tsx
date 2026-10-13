@@ -5,9 +5,11 @@ import { useRef, useState } from "react";
 import { blankCard, STATUSES, type Card, type Status } from "@/lib/board";
 import type { CardSummary, EditorCard } from "@/lib/card-types";
 import { useBoard } from "@/lib/client/use-board";
+import { useCardGlow } from "@/lib/client/use-card-glow";
 import { CardEditor } from "./components/card-editor";
 
 export default function Board() {
+  const { trackGlow, resetGlow } = useCardGlow();
   const [dragging, setDragging] = useState<string | null>(null);
   const [over, setOver] = useState<Status | null>(null);
   const [editor, setEditor] = useState<EditorCard | null>(null);
@@ -201,7 +203,12 @@ export default function Board() {
                       className={`card ${dragging === card.id ? "dragging" : ""} ${settled === card.id ? "settled" : ""}`}
                       key={card.id}
                       draggable={!busy}
+                      onPointerEnter={trackGlow}
+                      onPointerMove={trackGlow}
+                      onPointerLeave={resetGlow}
+                      onPointerCancel={resetGlow}
                       onDragStart={(event) => {
+                        resetGlow();
                         event.dataTransfer.setData("text/plain", card.id);
                         event.dataTransfer.effectAllowed = "move";
                         setDragging(card.id);
@@ -211,6 +218,7 @@ export default function Board() {
                         setOver(null);
                       }}
                     >
+                      <span className="card-edge-light" aria-hidden="true" />
                       <button
                         className="card-open"
                         aria-busy={opening === card.id}

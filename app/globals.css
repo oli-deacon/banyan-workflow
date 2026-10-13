@@ -193,10 +193,12 @@ main {
   gap: 12px;
 }
 .card {
+  position: relative;
+  isolation: isolate;
   background: #fff;
   border: 1px solid #dde3d9;
   border-radius: 7px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 2px 5px #24332506;
   transition:
     border-color 180ms,
@@ -220,8 +222,96 @@ main {
   padding: 16px 16px 0;
   gap: 8px;
 }
+.card-open {
+  border-radius: 6px 6px 0 0;
+}
 .card-open:hover {
-  background: #fcfdf9;
+  background: transparent;
+}
+/* React Bits Border Glow, adapted for Banyan's light cards.
+   Source and license: THIRD_PARTY_NOTICES.md. */
+.card {
+  --edge-proximity: 0;
+  --cursor-angle: 45deg;
+  --glow-strength: clamp(0, calc((var(--edge-proximity) - 0.3) / 0.7), 1);
+  --card-mesh:
+    radial-gradient(at 80% 55%, #b48be8 0, transparent 50%),
+    radial-gradient(at 69% 34%, #e68daf 0, transparent 50%),
+    radial-gradient(at 8% 6%, #60bbcb 0, transparent 50%),
+    radial-gradient(at 41% 38%, #b48be8 0, transparent 50%),
+    radial-gradient(at 86% 85%, #e68daf 0, transparent 50%),
+    linear-gradient(#60bbcb 0 100%);
+}
+.card::before,
+.card::after,
+.card-edge-light {
+  content: "";
+  position: absolute;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 250ms ease-out;
+}
+.card::before {
+  inset: -1px;
+  border: 2px solid transparent;
+  background:
+    linear-gradient(white 0 100%) padding-box,
+    var(--card-mesh) border-box;
+  mask-image: conic-gradient(
+    from var(--cursor-angle),
+    black 25%,
+    transparent 40%,
+    transparent 60%,
+    black 75%
+  );
+  z-index: -1;
+}
+.card::after {
+  inset: 0;
+  background: var(--card-mesh);
+  mask-image: radial-gradient(ellipse at center, transparent 40%, black 100%);
+  z-index: -1;
+}
+.card-edge-light {
+  inset: -12px;
+  mask-image: conic-gradient(
+    from var(--cursor-angle),
+    black 3%,
+    transparent 15%,
+    transparent 85%,
+    black 97%
+  );
+}
+.card-edge-light::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 1px 1px #bba1df,
+    inset 0 0 8px #b48be840,
+    0 0 2px #b48be8a0,
+    0 0 6px #e68daf70,
+    0 0 12px #60bbcb50;
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .card:hover::before,
+  .card:hover > .card-edge-light {
+    opacity: var(--glow-strength);
+  }
+  .card:hover::after {
+    opacity: calc(var(--glow-strength) * 0.12);
+  }
+}
+.card:focus-within::before {
+  mask-image: none;
+  opacity: 0.8;
+}
+.card.dragging::before,
+.card.dragging::after,
+.card.dragging > .card-edge-light {
+  opacity: 0;
 }
 .card-title {
   font-size: 15px;

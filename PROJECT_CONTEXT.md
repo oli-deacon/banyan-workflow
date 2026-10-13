@@ -2,6 +2,12 @@
 
 **Snapshot: 13 October 2026, Melbourne (Australia/Melbourne).** This records agreed decisions and verified state at that date, not a promise that a preview process is still running.
 
+## Card Border Glow — 14 October 2026
+
+Board cards now use a cursor-directed mesh-gradient border and soft edge glow adapted from React Bits Border Glow. The original light card layout remains. Pointer work is batched to animation frames without React renders; leaving, dragging and unmounting clear pending glow work. Touch and reduced-motion users do not get cursor tracking, and keyboard focus receives a static colored border with existing focus outlines intact. All decorative layers ignore pointer input. No dependency or data changes. Attribution and the upstream license are in `THIRD_PARTY_NOTICES.md`.
+
+Stop Condition PR #1 was subsequently approved by the user, merged as `fdcb335155a7284ae4cde02e70842b6d8e8b8a6e`, and deployed READY to production. Connector reads confirmed the five live samples still match the source task context and have blank Stop Condition values. The direct environment network path remains blocked and MongoDB write configuration is unavailable, so the live sample backfill remains unapplied. Historical preparation notes below describe the earlier state.
+
 ## Stop Condition change prepared — 13 October 2026
 
 Optional `stopCondition` is included in shared fields, blank cards, create/edit Context, reading view, activity labels, API validation and MongoDB records. It describes when to pause for human input; it does not implement agent execution. Legacy missing fields normalize to blank without a read-time write; older PATCH clients omitting the field preserve saved values. Explicit empty strings clear it. The detail limit remains 20,000 characters.
