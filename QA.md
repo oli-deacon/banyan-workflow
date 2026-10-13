@@ -6,7 +6,7 @@ Live: https://banyan-workflow.vercel.app. Shared saved synthetic board with no l
 - All 22 regression tests, lint, type checking and production build passed. Vercel independently built and deployed the same application successfully.
 - Seeded five synthetic cards into the separate `cards_public_demo` collection. The local `cards` collection has five records; a private checksum baseline was captured before hosted tests and matched after testing.
 - Vercel production secrets configured with explicit user approval for reuse of the app credential. No Atlas network-rule or permission change was made.
-- GitHub integration is not connected; deployments use the Vercel CLI.
+- Initial deployments used the Vercel CLI. On 13 October 2026, after the user authorized GitHub in Vercel, project settings confirmed `oli-deacon/banyan-workflow` is connected, production branch is `main`, automatic domain assignment is enabled and fork protection is on. The documentation update is the push-triggered deployment verification change.
 - Live browser: loaded five samples, displayed public/synthetic-data warnings, created a temporary card, edited its summary and moved it to Ready for Review. A fresh tab showed the same saved record and four coherent activity events after API concurrency testing.
 - Live API: GET 200 with `public-demo` mode; simultaneous same-version PATCH requests returned 200 and 409. A cross-origin write returned 403; another board returned 404.
 - Live database: the browser fixture matched its saved API snapshot in `cards_public_demo`. Removed only that exact unchanged fixture, leaving five demo samples. The local board checksum remained unchanged.

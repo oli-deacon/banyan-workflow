@@ -16,7 +16,7 @@ A shared MongoDB limiter permits 30 write attempts per minute and 500 per UTC da
 
 Vercel production secrets are configured separately from the ignored local `.env.local`. The user authorized reuse of the app's existing database credential; collection separation is enforced by application code, while the credential has database-wide access. Preview deployments do not receive the production credential. `.vercelignore` excludes local secrets, generated files and QA screenshots from uploads.
 
-The project can be deployed directly using the Vercel CLI. GitHub auto-deployment is not configured because the Vercel GitHub integration is not connected. Source pushes alone do not release the site.
+Vercel is connected to `oli-deacon/banyan-workflow` on GitHub. Pushes to `main` trigger production builds and automatically update https://banyan-workflow.vercel.app after a successful deployment. Fork protection is enabled. Other branches use preview deployments, which do not receive the production database credential or enable the shared demo API. The Vercel CLI remains available for explicitly requested manual deployments.
 
 ## Local Atlas connection
 
