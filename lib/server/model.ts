@@ -3,7 +3,7 @@ import {
   FIELDS,
   isStatus,
   validateCard,
-  withStopCondition,
+  withCardDefaults,
 } from "../board";
 import { publicDemo } from "./access";
 export const BOARD_ID = "modernization";
@@ -45,6 +45,7 @@ export function exact(value: Record<string, unknown>, keys: string[]) {
 export function parseCard(value: unknown): Card {
   const item = { ...object(value) };
   if (!("stopCondition" in item)) item.stopCondition = "";
+  if (!("owner" in item)) item.owner = "";
   exact(item, ["id", "status", "sample", ...FIELDS]);
   if (
     typeof item.id !== "string" ||
@@ -57,7 +58,12 @@ export function parseCard(value: unknown): Card {
   const card = item as Card;
   const error = validateCard(card);
   if (error) throw new ApiError(400, error);
-  return { ...card, title: card.title.trim(), summary: card.summary.trim() };
+  return {
+    ...card,
+    title: card.title.trim(),
+    summary: card.summary.trim(),
+    owner: card.owner.trim().replace(/\s+/g, " "),
+  };
 }
 export function version(value: unknown): number {
   if (!Number.isSafeInteger(value) || (value as number) < 1)
@@ -71,7 +77,7 @@ export function newRecord(
 ): RecordCard {
   const at = new Date().toISOString();
   return {
-    ...withStopCondition(card),
+    ...withCardDefaults(card),
     boardId,
     version: 1,
     createdAt: at,
@@ -95,7 +101,7 @@ export function revision(
   current: RecordCard,
   patch: Card | { status: Card["status"] },
 ): RecordCard {
-  current = withStopCondition(current);
+  current = withCardDefaults(current);
   const at = new Date().toISOString();
   const fields = Object.keys(patch).filter(
     (key) =>

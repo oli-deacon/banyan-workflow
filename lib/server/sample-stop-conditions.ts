@@ -1,5 +1,5 @@
 import type { Collection } from "mongodb";
-import { FIELDS, samples, withStopCondition } from "../board";
+import { FIELDS, samples, withCardDefaults } from "../board";
 import { BOARD_ID, revision, type RecordCard } from "./model";
 
 export const SAMPLE_COLLECTIONS = ["cards", "cards_public_demo"] as const;
@@ -44,13 +44,15 @@ export async function backfillSampleStopConditions(
       current.version < 1 ||
       FIELDS.some(
         (field) =>
-          field !== "stopCondition" && current[field] !== sample[field],
+          field !== "stopCondition" &&
+          field !== "owner" &&
+          current[field] !== sample[field],
       )
     )
       outcome = "review-changed-context";
     else if (!apply) outcome = "would-fill";
     else {
-      const normalized = withStopCondition(current);
+      const normalized = withCardDefaults(current);
       const next = revision(normalized, {
         ...normalized,
         stopCondition: sample.stopCondition,
@@ -64,10 +66,9 @@ export async function backfillSampleStopConditions(
           version: current.version,
           // Context and missing-field predicates also protect against older writers.
           ...Object.fromEntries(
-            FIELDS.filter((field) => field !== "stopCondition").map((field) => [
-              field,
-              current[field],
-            ]),
+            FIELDS.filter(
+              (field) => field !== "stopCondition" && field !== "owner",
+            ).map((field) => [field, current[field]]),
           ),
           $or: [{ stopCondition: { $exists: false } }, { stopCondition: "" }],
         },

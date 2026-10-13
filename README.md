@@ -2,7 +2,9 @@
 
 For new coding sessions, start with [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) for the dated decisions, architecture, verification and open ideas.
 
-A Next.js / React / TypeScript workflow board with a server-side API and the official MongoDB Node driver. The exact fixed columns remain **To Do**, **In Progress**, **Ready for Review**, **Done**. Cards support creation, editing, desktop drag/drop, a keyboard/touch Move control, a reading-first expandable detail panel, an explicit Edit action, and activity history. New cards start with title, summary and status, with optional grouped details. Save and move notifications are visible; moves offer version-checked Undo so newer changes cannot be overwritten.
+A Next.js / React / TypeScript workflow board with a server-side API and the official MongoDB Node driver. The exact fixed columns remain **To Do**, **In Progress**, **Ready for Review**, **Done**. Cards support creation, editing, desktop drag/drop, a keyboard/touch Move control, a reading-first expandable detail panel, an explicit Edit action, and activity history. New cards start with title, summary, optional owner and status, with optional grouped details. Save and move notifications are visible; moves offer version-checked Undo so newer changes cannot be overwritten.
+
+Owner is a free-text responsibility label (up to 100 characters), shown on the board and in card details. Leave it blank for **Unassigned**; existing cards and samples start unassigned. It does not create accounts, permissions or notifications. Use fictional names in the public demo. Older clients that omit Owner preserve the saved value when editing other fields.
 
 Board cards include a cursor-following border glow adapted from [React Bits Border Glow](https://reactbits.dev/components/border-glow), with a static keyboard-focus treatment and reduced-motion support. Attribution and license: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 

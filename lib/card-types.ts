@@ -3,11 +3,10 @@ import type { RecordCard } from "./server/model";
 
 export type CardSummary = Pick<
   RecordCard,
-  "id" | "title" | "summary" | "status" | "sample" | "version"
+  "id" | "title" | "summary" | "owner" | "status" | "sample" | "version"
 >;
 export type EditorCard =
-  | RecordCard
-  | (Card & { version?: never; activity?: never });
+  RecordCard | (Card & { version?: never; activity?: never });
 export type BoardResponse = {
   cards: CardSummary[];
   mode: "public-demo" | "mock" | "mongodb";
@@ -18,9 +17,10 @@ export function summarizeCard({
   id,
   title,
   summary,
+  owner = "",
   status,
   sample,
   version,
 }: CardSummary): CardSummary {
-  return { id, title, summary, status, sample, version };
+  return { id, title, summary, owner, status, sample, version };
 }

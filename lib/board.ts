@@ -8,6 +8,7 @@ export type Status = (typeof STATUSES)[number];
 export const FIELDS = [
   "title",
   "summary",
+  "owner",
   "objective",
   "context",
   "references",
@@ -31,6 +32,7 @@ export function blankCard(status: Status = "To Do", id = ""): Card {
     sample: false,
     title: "",
     summary: "",
+    owner: "",
     objective: "",
     context: "",
     references: "",
@@ -52,6 +54,8 @@ export function validateCard(card: Card): string | null {
   if (!card.title.trim()) return "Give this card a title.";
   if (card.title.length > 160)
     return "Keep the title to 160 characters or fewer.";
+  if (card.owner.length > 100)
+    return "Keep the owner to 100 characters or fewer.";
   if (card.summary.length > 400)
     return "Keep the summary to 400 characters or fewer.";
   if (FIELDS.some((key) => card[key].length > 20000))
@@ -135,9 +139,13 @@ export const samples: Card[] = [
   },
 ];
 
-// Legacy documents and responses predate this optional detail field.
-export function withStopCondition<T extends { stopCondition?: string }>(
-  card: T,
-): T & { stopCondition: string } {
-  return { ...card, stopCondition: card.stopCondition ?? "" };
+// Legacy documents and responses predate these optional fields.
+export function withCardDefaults<
+  T extends { stopCondition?: string; owner?: string },
+>(card: T): T & { stopCondition: string; owner: string } {
+  return {
+    ...card,
+    stopCondition: card.stopCondition ?? "",
+    owner: card.owner ?? "",
+  };
 }

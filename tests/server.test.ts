@@ -357,6 +357,7 @@ test("list returns compact summaries; detail returns complete content with the s
   const data = await list.json();
   assert.deepEqual(Object.keys(data.cards[0]).sort(), [
     "id",
+    "owner",
     "sample",
     "status",
     "summary",
@@ -397,6 +398,7 @@ test("Mongo list projects out detail and activity fields at the database", async
         id: 1,
         title: 1,
         summary: 1,
+        owner: 1,
         status: 1,
         sample: 1,
         version: 1,
@@ -501,6 +503,7 @@ test("Mongo legacy reads normalize without writes and edits persist stop conditi
   const original = await new MemoryStore().create(BOARD_ID, card);
   let saved = { ...original } as RecordCard;
   delete (saved as Partial<RecordCard>).stopCondition;
+  delete (saved as Partial<RecordCard>).owner;
   let writes = 0;
   const collection = {
     findOne: async () => structuredClone(saved),
@@ -516,6 +519,7 @@ test("Mongo legacy reads normalize without writes and edits persist stop conditi
   } as unknown as Collection<RecordCard>;
   const store = new MongoStore(collection);
   assert.equal((await store.get(BOARD_ID, card.id)).stopCondition, "");
+  assert.equal((await store.get(BOARD_ID, card.id)).owner, "");
   assert.equal(writes, 0);
   assert.equal(Object.hasOwn(saved, "stopCondition"), false);
   const noop = await store.update(BOARD_ID, card.id, 1, card);
@@ -524,13 +528,77 @@ test("Mongo legacy reads normalize without writes and edits persist stop conditi
   const updated = await store.update(BOARD_ID, card.id, 1, {
     ...card,
     stopCondition: "Pause if evidence is missing.",
+    owner: "Alex Example",
   });
   assert.equal(updated.stopCondition, "Pause if evidence is missing.");
   assert.equal(saved.stopCondition, updated.stopCondition);
+  assert.equal(saved.owner, "Alex Example");
   assert.equal(updated.version, 2);
-  assert.deepEqual(updated.activity.at(-1)?.fields, ["stopCondition"]);
+  assert.deepEqual(updated.activity.at(-1)?.fields, ["owner", "stopCondition"]);
   await assert.rejects(
     store.update(BOARD_ID, card.id, 1, card),
     (e) => e instanceof ApiError && e.status === 409,
   );
+});
+
+test("owner roundtrip, normalization, legacy preservation, clearing and conflict", async () => {
+  const store = new MemoryStore();
+  const created = await handle(
+    request("POST", { card: { ...card, owner: "  Alex   Example  " } }),
+    BOARD_ID,
+    undefined,
+    store,
+  );
+  assert.equal(created.status, 201);
+  assert.equal((await created.json()).card.owner, "Alex Example");
+  assert.equal((await store.list(BOARD_ID))[0].owner, "Alex Example");
+  const legacy = { ...card, summary: "Older client" } as Partial<typeof card>;
+  delete legacy.owner;
+  const edit = await handle(
+    request("PATCH", { card: legacy, expectedVersion: 1 }),
+    BOARD_ID,
+    card.id,
+    store,
+  );
+  assert.equal(edit.status, 200);
+  assert.equal((await edit.json()).card.owner, "Alex Example");
+  const stale = await handle(
+    request("PATCH", {
+      card: { ...card, owner: "Sam Example" },
+      expectedVersion: 1,
+    }),
+    BOARD_ID,
+    card.id,
+    store,
+  );
+  assert.equal(stale.status, 409);
+  const clear = await handle(
+    request("PATCH", { card: { ...legacy, owner: "" }, expectedVersion: 2 }),
+    BOARD_ID,
+    card.id,
+    store,
+  );
+  assert.equal(clear.status, 200);
+  const saved = (await clear.json()).card;
+  assert.equal(saved.owner, "");
+  assert.deepEqual(saved.activity.at(-1).fields, ["owner"]);
+});
+
+test("owner validation supports legacy omission and limits names", async () => {
+  const legacy = { ...card } as Partial<typeof card>;
+  delete legacy.owner;
+  assert.equal(parseCard(legacy).owner, "");
+  assert.equal(
+    parseCard({ ...card, owner: "x".repeat(100) }).owner.length,
+    100,
+  );
+  for (const owner of [null, 42, [], {}, true, "x".repeat(101)]) {
+    const response = await handle(
+      request("POST", { card: { ...card, owner } }),
+      BOARD_ID,
+      undefined,
+      new MemoryStore(),
+    );
+    assert.equal(response.status, 400);
+  }
 });
