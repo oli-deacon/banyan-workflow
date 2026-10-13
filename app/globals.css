@@ -639,18 +639,19 @@ fieldset.detail-body {
   transform: translateY(-2px);
 }
 .card-open {
-  padding: 18px 16px 10px;
+  padding: 16px 16px 0;
+  gap: 8px;
 }
 .card-title {
   font-weight: 650;
 }
 .card-footer {
-  padding: 4px 12px 8px 16px;
+  padding: 0 12px 6px 16px;
 }
 .move-control {
   font-size: 12px;
-  min-height: 36px;
-  padding: 8px;
+  min-height: 28px;
+  padding: 4px 8px;
 }
 .sample-label {
   font-size: 10px;
