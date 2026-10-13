@@ -2,6 +2,10 @@
 
 **Snapshot: 13 October 2026, Melbourne (Australia/Melbourne).** This records agreed decisions and verified state at that date, not a promise that a preview process is still running.
 
+## Board polish prepared — 14 October 2026
+
+Cards have roomier summary/footer spacing, softer corners and refined title/summary hierarchy. Columns have subtle stage-specific surfaces and aligned desktop heights; counts use consistent badges. Toolbar, Add card and Move controls share restrained hover/focus treatments. Move targets are at least 44px high for coarse pointers, with SVG arrows independent of installed fonts. Done cards use a quieter surface and a decorative checkmark that updates with moves and Undo. The existing cursor glow and reduced-motion handling remain intact. This is a presentation-only change; no data or workflow semantics changed. Publication awaits approval for this change.
+
 ## Card Border Glow — 14 October 2026
 
 Board cards now use a cursor-directed mesh-gradient border and soft edge glow adapted from React Bits Border Glow. The original light card layout remains. Pointer work is batched to animation frames without React renders; leaving, dragging and unmounting clear pending glow work. Touch and reduced-motion users do not get cursor tracking, and keyboard focus receives a static colored border with existing focus outlines intact. All decorative layers ignore pointer input. No dependency or data changes. Attribution and the upstream license are in `THIRD_PARTY_NOTICES.md`.

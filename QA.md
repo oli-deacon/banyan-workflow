@@ -1,3 +1,10 @@
+## Board polish — 14 October 2026
+
+- Refined card spacing and typography; added subtle column surfaces, aligned desktop column heights, consistent count badges, toolbar/Add/Move interaction treatments and quieter completed cards with decorative SVG checks. Move arrows now use SVG, and coarse-pointer Move controls have 44px minimum targets.
+- 32 unit/API tests and all 12 existing Chromium browser regressions passed. Lint, typecheck and production build passed.
+- Focused mock-mode checks at 1440, 768 and 390px verified no horizontal overflow, distinct column surfaces, completion marks, accessible control names, keyboard focus, touch targets, drag/drop and Move/Undo (including completion-style updates). A second pass confirmed cursor glow, pointer reset, reduced motion, touch opening and card details remained functional. No browser page errors were observed; desktop/mobile screenshots were inspected.
+- All mutations used only the isolated memory mock. No live data changes or production deployment occurred during implementation. Safari, Firefox and physical-device checks remain unperformed.
+
 ## Card Border Glow — 14 October 2026
 
 - Adapted React Bits Border Glow for the existing light board cards: cursor-directed mesh border, soft outer glow and restrained edge fill. Preserved card controls, desktop drag handlers, native focus outlines and responsive geometry. Upstream attribution/license retained in `THIRD_PARTY_NOTICES.md`; no runtime dependency added.

@@ -200,7 +200,7 @@ export default function Board() {
                 <div className="card-list">
                   {items.map((card) => (
                     <article
-                      className={`card ${dragging === card.id ? "dragging" : ""} ${settled === card.id ? "settled" : ""}`}
+                      className={`card ${card.status === "Done" ? "card-complete" : ""} ${dragging === card.id ? "dragging" : ""} ${settled === card.id ? "settled" : ""}`}
                       key={card.id}
                       draggable={!busy}
                       onPointerEnter={trackGlow}
@@ -225,7 +225,32 @@ export default function Board() {
                         disabled={opening !== null}
                         onClick={() => void open(card)}
                       >
-                        <span className="card-title">{card.title}</span>
+                        <span className="card-title">
+                          {card.status === "Done" && (
+                            <svg
+                              className="card-completion-mark"
+                              viewBox="0 0 20 20"
+                              fill="none"
+                              aria-hidden="true"
+                            >
+                              <circle
+                                cx="10"
+                                cy="10"
+                                r="8"
+                                fill="currentColor"
+                                opacity="0.12"
+                              />
+                              <path
+                                d="m6 10 2.5 2.5L14 7"
+                                stroke="currentColor"
+                                strokeWidth="1.7"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          )}
+                          <span>{card.title}</span>
+                        </span>
                         <span className="card-summary">
                           {card.summary ||
                             "Add a summary to give this work context."}
@@ -250,7 +275,20 @@ export default function Board() {
                               <option key={value}>{value}</option>
                             ))}
                           </select>
-                          <span aria-hidden="true">↗</span>
+                          <svg
+                            className="move-icon"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="M4 12 12 4M4 4h8v8"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
                         </label>
                       </footer>
                     </article>
