@@ -328,42 +328,28 @@ export default function Board() {
           <h1>Modernization</h1>
           <span>{ready ? `${cards.length} cards` : "Loading…"}</span>
         </div>
-        <button
-          ref={newButton}
-          className="primary"
-          disabled={!ready || busy}
-          onClick={() => open(blankCard())}
-        >
-          ＋ New card
-        </button>
-      </section>
-      <div className="board-toolbar">
-        <div>
-          {mode !== "public-demo" && (
-            <p>
-              {!ready && busy
-                ? "Connecting to your board…"
-                : mode === "mongodb"
-                  ? "MongoDB · local development access"
-                  : mode === "mock"
-                    ? "MOCK MODE · memory only, resets on restart"
-                    : "Server connection unavailable"}
-            </p>
-          )}
-          {ready && (
-            <p
-              className={`sync-status ${syncWarning ? "sync-paused" : ""}`}
-              role="status"
-            >
-              {syncWarning ||
-                `Updates every 5 minutes · checked ${checkedAt ? relativeTime(checkedAt, Math.max(clock, checkedAt || 0)).toLowerCase() : "just now"}`}
-            </p>
-          )}
+        <div className="workspace-actions">
+          <button disabled={busy} onClick={() => void refresh()}>
+            {busy ? "Working…" : "Refresh board"}
+          </button>
+          <button
+            ref={newButton}
+            className="primary"
+            disabled={!ready || busy}
+            onClick={() => open(blankCard())}
+          >
+            ＋ New card
+          </button>
         </div>
-        <button disabled={busy} onClick={() => void refresh()}>
-          {busy ? "Working…" : "Refresh board"}
-        </button>
-      </div>
+      </section>
+      {(mode === "mongodb" || mode === "mock") && (
+        <p className="storage-label">
+          {mode === "mongodb"
+            ? "MongoDB · local development access"
+            : "MOCK MODE · memory only, resets on restart"}
+        </p>
+      )}
+      {syncWarning && <p className="warning" role="status">{syncWarning}</p>}
       {mode === "public-demo" && (
         <p className="demo-notice">
           <strong>Public demo · Synthetic data only.</strong> Anyone can view and

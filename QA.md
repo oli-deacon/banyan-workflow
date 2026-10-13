@@ -1,3 +1,7 @@
+## Consolidated board actions — 13 October 2026
+
+Moved Refresh board beside New card and removed the persistent update-status row. Five-minute polling and focus/reconnect refresh remain; a failed sync still displays its warning. Local/mock storage labels remain explicit.
+
 ## Compact public-demo notice — 13 October 2026
 
 Replaced the board’s padded warning banner with a compact text line. Public editing, synthetic-only use and the prohibition on personal/customer/confidential information remain explicit. Editor reminders and actual error alerts retain their existing styling.
