@@ -20,7 +20,6 @@ export type Card = { id: string; status: Status; sample: boolean } & Record<
   (typeof FIELDS)[number],
   string
 >;
-export const STORAGE_KEY = "banyan-workflow:v1";
 export function isStatus(value: unknown): value is Status {
   return STATUSES.includes(value as Status);
 }
@@ -63,21 +62,6 @@ export function validateCard(card: Card): string | null {
   )
     return "Use a full http:// or https:// reference URL, one per line.";
   return null;
-}
-export function moveCard(cards: Card[], id: string, status: Status): Card[] {
-  if (!isStatus(status)) return cards;
-  return cards.map((card) => (card.id === id ? { ...card, status } : card));
-}
-export function upsertCard(cards: Card[], card: Card): Card[] {
-  if (!card.id || validateCard(card)) return cards;
-  const clean = {
-    ...card,
-    title: card.title.trim(),
-    summary: card.summary.trim(),
-  };
-  return cards.some((item) => item.id === card.id)
-    ? cards.map((item) => (item.id === card.id ? clean : item))
-    : [...cards, clean];
 }
 export const samples: Card[] = [
   {
@@ -138,47 +122,3 @@ export const samples: Card[] = [
     outputs: "Local setup notes and a fictional dependency inventory.",
   },
 ];
-export function encodeBoard(cards: Card[]): string {
-  return JSON.stringify({ version: 1, cards });
-}
-export function decodeBoard(raw: string | null): {
-  cards: Card[];
-  warning: string | null;
-} {
-  if (raw === null) return { cards: samples, warning: null };
-  try {
-    const data: unknown = JSON.parse(raw);
-    if (
-      !data ||
-      typeof data !== "object" ||
-      !("version" in data) ||
-      data.version !== 1 ||
-      !("cards" in data) ||
-      !Array.isArray(data.cards)
-    )
-      throw Error();
-    const ids = new Set<string>();
-    for (const card of data.cards) {
-      if (
-        !card ||
-        typeof card !== "object" ||
-        typeof card.id !== "string" ||
-        !card.id ||
-        ids.has(card.id) ||
-        typeof card.sample !== "boolean" ||
-        !isStatus(card.status) ||
-        FIELDS.some((key) => typeof card[key] !== "string") ||
-        validateCard(card)
-      )
-        throw Error();
-      ids.add(card.id);
-    }
-    return { cards: data.cards as Card[], warning: null };
-  } catch {
-    return {
-      cards: samples,
-      warning:
-        "Saved data could not be read. Sample cards are shown; the original storage will stay untouched until you make a change.",
-    };
-  }
-}

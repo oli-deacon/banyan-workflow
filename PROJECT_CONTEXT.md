@@ -42,18 +42,21 @@ Next.js App Router, React, TypeScript, custom CSS and the official MongoDB Node 
 
 | File | Responsibility |
 | --- | --- |
-| `app/page.tsx` | Client board, API calls, drag/drop, Move, editor, fullscreen, request/error state and activity display |
+| `app/page.tsx` | Board presentation, drag/drop and panel opening/closing |
+| `app/components/card-editor.tsx` | Reading/editing panel, draft protection, fullscreen and activity |
+| `lib/client/use-board.ts`, `lib/client/api.ts` | Shared updates, request/version coordination, typed API calls and errors |
+| `lib/card-types.ts` | Compact summary, editor and API response types |
 | `app/globals.css`, `app/layout.tsx` | Responsive styling and root layout |
-| `lib/board.ts` | Shared card fields/statuses, validation and synthetic samples; legacy browser codec remains but is not used by the UI |
+| `lib/board.ts` | Shared card fields/statuses, validation and synthetic samples |
 | `lib/server/model.ts` | Strict payload validation, board/database constants, versions, timestamps and activity records |
 | `lib/server/store.ts` | MongoDB adapter, explicit in-memory mock, atomic conditional updates and insert-only seed |
 | `lib/server/api.ts` | Local-access checks, bounded JSON parsing and sanitized API errors |
 | `app/api/boards/[boardId]/cards/route.ts` | GET board cards and POST card |
-| `app/api/boards/[boardId]/cards/[id]/route.ts` | PATCH card content or status with expected version |
+| `app/api/boards/[boardId]/cards/[id]/route.ts` | GET full card details; PATCH content or status with expected version |
 | `scripts/seed.ts` | Explicit, idempotent synthetic seeding |
-| `tests/board.test.ts`, `tests/server.test.ts` | Shared-model/legacy-codec and API/store regressions |
+| `tests/board.test.ts`, `tests/server.test.ts` | Shared validation and API/store regressions; browser interactions in `tests/browser/board.spec.ts` |
 
-The only active board is `modernization`. Each card is an individual document with a stable ID and board ID; the unique index is `{ boardId: 1, id: 1 }`. Creates start at version 1. Updates match board ID, card ID and `expectedVersion` atomically; stale writes return **409 VERSION_CONFLICT** without overwriting newer work. Activity is embedded and updated atomically with the card; the latest **500 events per card** are retained. Actors represent either local development or anonymous public-demo visitors, not authenticated people. This is not an immutable audit archive.
+The only active board is `modernization`. Each card is an individual document with a stable ID and board ID; the unique index is `{ boardId: 1, id: 1 }`. The board list returns compact summaries; opening a card fetches full details and history. Creates start at version 1. Unchanged edits/moves preserve version, timestamp and activity; stale attempts still conflict. Updates match board ID, card ID and `expectedVersion` atomically; stale writes return **409 VERSION_CONFLICT** without overwriting newer work. Activity is embedded and updated atomically with the card; the latest **500 events per card** are retained. Actors represent either local development or anonymous public-demo visitors, not authenticated people. This is not an immutable audit archive.
 
 ## Live persistence and access boundary
 
@@ -80,6 +83,8 @@ npm test
 npm run lint
 npm run typecheck
 npm run build
+npx playwright install chromium  # one-time browser setup
+npm run test:browser
 ```
 
 `npm run seed` explicitly inserts missing synthetic examples; it is not needed on every startup. `npm run dev:mock -- --port 3101` selects the separate, memory-only mock for deliberate local testing. `npm start -- --port 3101` runs a production build, but its API remains denied unless public-demo mode and the exact public origin are configured.

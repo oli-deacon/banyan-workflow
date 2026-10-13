@@ -74,7 +74,11 @@ export function newRecord(
         version: 1,
         at,
         action: seeded ? "seeded" : "created",
-        actor: seeded ? "sample-seed" : publicDemo() ? "public-demo-visitor" : "local-developer",
+        actor: seeded
+          ? "sample-seed"
+          : publicDemo()
+            ? "public-demo-visitor"
+            : "local-developer",
         fields: [],
       },
     ],
@@ -89,6 +93,7 @@ export function revision(
     (key) =>
       patch[key as keyof typeof patch] !== current[key as keyof RecordCard],
   );
+  if (fields.length === 0) return current;
   const moved = current.status !== patch.status;
   const activity: Activity = {
     version: current.version + 1,

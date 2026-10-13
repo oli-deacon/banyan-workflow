@@ -79,7 +79,7 @@ Seeding is explicit, not a side effect of loading the page in MongoDB mode. Exis
 - Synthetic seed IDs are stable. Seeding uses `$setOnInsert` with upsert and never resets edited or existing cards. Running the seed repeatedly is safe.
 - Moving a card changes workflow status plus its version/timestamp/history. No agent execution or harness state is inferred or launched.
 
-API routes: `GET/POST /api/boards/modernization/cards` and `PATCH /api/boards/modernization/cards/:id`. PATCH accepts a complete `card` or a `status`, with `expectedVersion`. The server validates field types, title and size limits, status, HTTP(S) links, unknown fields and body size. IDs and board boundaries are checked; server metadata cannot be supplied through card payloads. The client retains a new card's ID on uncertain write retries and reports duplicate creation rather than silently creating another item.
+API routes: `GET/POST /api/boards/modernization/cards` and `GET/PATCH /api/boards/modernization/cards/:id`. The list returns compact summaries; the per-card GET returns full details and activity. Unchanged PATCH requests preserve the version, timestamp and history while still enforcing the expected version. PATCH accepts a complete `card` or a `status`, with `expectedVersion`. The server validates field types, title and size limits, status, HTTP(S) links, unknown fields and body size. IDs and board boundaries are checked; server metadata cannot be supplied through card payloads. The client retains a new card's ID on uncertain write retries and reports duplicate creation rather than silently creating another item.
 
 ## Access boundaries and future authentication
 
@@ -94,16 +94,22 @@ npm test
 npm run lint
 npm run typecheck
 npm run build
+npx playwright install chromium  # one-time browser setup
+npm run test:browser
 ```
 
 - `lib/server/model.ts`: strict request model, versions and activity.
 - `lib/server/store.ts`: MongoDB adapter, explicit in-memory mock and insert-only seed.
 - `lib/server/api.ts`: local access gate, bounded JSON parsing and API errors.
 - `app/api/boards/[boardId]/cards/`: route handlers.
-- `app/page.tsx`: existing board UI connected to the API, request locks, retained drafts, refresh and activity.
+- `app/page.tsx`: board presentation and panel navigation.
+- `app/components/card-editor.tsx`: reading/editing, retained drafts and activity.
+- `lib/client/use-board.ts`: refresh, shared updates and write coordination.
+- `lib/client/api.ts`, `lib/card-types.ts`: typed requests and summary/detail responses.
 - `scripts/seed.ts`: explicit synthetic Atlas seed command.
 - `tests/server.test.ts`: server/API and mocked Mongo adapter regressions.
-- `tests/board.test.ts`: original model/legacy codec regressions (the UI no longer uses that codec).
+- `tests/board.test.ts`: shared validation and fixed-status regressions.
+- `tests/browser/board.spec.ts`: Chromium checks for draft protection, refresh recovery, delayed reads, stale Undo, no-change saves and API persistence. The suite starts its own isolated memory mock on port 3107; it does not write to Atlas.
 - `QA.md`: observed checks and live-Atlas limitations.
 
 Public source repository: https://github.com/oli-deacon/banyan-workflow. Publishing the source does not deploy the application or include local credentials or live database records. The public demo is authorized for synthetic testing. No real personal data or agent harness is included.

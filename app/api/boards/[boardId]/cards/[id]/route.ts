@@ -5,3 +5,8 @@ export async function PATCH(request: Request, context: Context) {
   const { boardId, id } = await context.params;
   return handle(request, boardId, id);
 }
+
+export async function GET(request: Request, context: Context) {
+  const { boardId, id } = await context.params;
+  return handle(request, boardId, id);
+}

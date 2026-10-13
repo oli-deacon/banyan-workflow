@@ -1,3 +1,14 @@
+## Review fixes and cleanup — 13 October 2026
+
+- Split the board presentation, card editor, board-data hook and typed API client. Removed the retired browser-storage codec and mutation helpers with their obsolete tests.
+- Unchanged edits and moves retain the version, timestamp and history. Expected-version checks still apply, including Mongo's atomic predicate. The public limiter still counts attempted writes; unchanged Save is disabled in the UI.
+- Successful background reads clear stale refresh errors without clearing uncertain write warnings. Non-JSON write failures retain the draft and explain the uncertain outcome.
+- Board reads now return compact summaries; opening or explicitly reloading a card fetches its full detail/history through the same access gate. No schema migration or credential changes.
+- `npm test`: 25 passing server/model tests, including four new regressions replacing four retired-code tests. `npm run test:browser`: nine passing Chromium regressions for unchanged saves, recovery after manual/poll failures, delayed reads overlapping a move, dirty-draft replacement, stale Undo, non-JSON failures, five-minute polling, uncertain move warnings, and a real mock API create/edit/reload flow.
+- Lint, typecheck and production build passed. Browser tests start an isolated memory mock on port 3107 and never write to Atlas.
+- CSS duplicate rules and obsolete selectors were consolidated. A temporary Chromium comparison at 1440×1000 found identical computed layout, typography and spacing for the board, reading panel and editor before/after consolidation. Screenshots were inspected locally; the temporary comparison script was removed.
+- Dependency audit separately reports five high-severity entries in the existing ESLint → fast-glob → micromatch → braces development-tool chain. Playwright adds none of these. No forced framework downgrade was applied; dependency remediation is outside this behavioural cleanup.
+
 ## Consolidated board actions — 13 October 2026
 
 Moved Refresh board beside New card and removed the persistent update-status row. Five-minute polling and focus/reconnect refresh remain; a failed sync still displays its warning. Local/mock storage labels remain explicit.

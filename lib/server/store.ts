@@ -1,4 +1,5 @@
 import { MongoClient, type Collection } from "mongodb";
+import { summarizeCard, type CardSummary } from "../card-types";
 import { type Card, samples } from "../board";
 import { collectionName, publicDemo } from "./access";
 import {
@@ -11,7 +12,8 @@ import {
 } from "./model";
 export interface Store {
   checkDemoWrite?: () => Promise<void>;
-  list(boardId: string): Promise<RecordCard[]>;
+  list(boardId: string): Promise<CardSummary[]>;
+  get(boardId: string, id: string): Promise<RecordCard>;
   create(boardId: string, card: Card, seed?: boolean): Promise<RecordCard>;
   update(
     boardId: string,
@@ -31,8 +33,15 @@ export class MemoryStore implements Store {
   private records = new Map<string, RecordCard>();
   async list(board: string) {
     return structuredClone(
-      [...this.records.values()].filter((card) => card.boardId === board),
+      [...this.records.values()]
+        .filter((card) => card.boardId === board)
+        .map(summarizeCard),
     );
+  }
+  async get(board: string, id: string) {
+    const card = this.records.get(board + ":" + id);
+    if (!card) throw missing();
+    return structuredClone(card);
   }
   async create(board: string, card: Card, seed = false) {
     const key = board + ":" + card.id;
@@ -71,9 +80,30 @@ export class MongoStore implements Store {
   ) {}
   async list(boardId: string) {
     return this.collection
-      .find({ boardId }, { projection: { _id: 0 } })
+      .find<CardSummary>(
+        { boardId },
+        {
+          projection: {
+            _id: 0,
+            id: 1,
+            title: 1,
+            summary: 1,
+            status: 1,
+            sample: 1,
+            version: 1,
+          },
+        },
+      )
       .sort({ createdAt: 1, id: 1 })
       .toArray();
+  }
+  async get(boardId: string, id: string) {
+    const card = await this.collection.findOne(
+      { boardId, id },
+      { projection: { _id: 0 } },
+    );
+    if (!card) throw missing();
+    return card;
   }
   async create(boardId: string, card: Card, seed = false) {
     const record = newRecord(card, boardId, seed);
@@ -89,8 +119,16 @@ export class MongoStore implements Store {
           { projection: { _id: 0 } },
         ))!;
       }
-      if (publicDemo() && await this.collection.countDocuments({ boardId }, { limit: 200 }) >= 200)
-        throw new ApiError(429, "The shared demo is full. Please edit an existing card instead.", "DEMO_FULL");
+      if (
+        publicDemo() &&
+        (await this.collection.countDocuments({ boardId }, { limit: 200 })) >=
+          200
+      )
+        throw new ApiError(
+          429,
+          "The shared demo is full. Please edit an existing card instead.",
+          "DEMO_FULL",
+        );
       await this.collection.insertOne({ ...record });
       return record;
     } catch (error) {
@@ -166,7 +204,8 @@ export async function getStore(): Promise<Store> {
         await collection.createIndex({ boardId: 1, id: 1 }, { unique: true });
         let checkDemoWrite: (() => Promise<void>) | undefined;
         if (publicDemo()) {
-          const limits = database.collection<DemoWriteBucket>("public_demo_limits");
+          const limits =
+            database.collection<DemoWriteBucket>("public_demo_limits");
           await limits.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
           checkDemoWrite = () => checkDemoWriteLimit(limits);
         }
@@ -194,7 +233,10 @@ export async function checkDemoWriteLimit(
   now = Date.now(),
 ) {
   // Shared across function instances; rejected attempts also consume quota.
-  for (const [window, maximum] of [[60000, 30], [86400000, 500]]) {
+  for (const [window, maximum] of [
+    [60000, 30],
+    [86400000, 500],
+  ]) {
     const start = Math.floor(now / window) * window;
     let bucket;
     try {
@@ -208,7 +250,11 @@ export async function checkDemoWriteLimit(
       );
     } catch (error) {
       if ((error as { code?: number }).code === 11000)
-        throw new ApiError(429, "The demo is busy. Keep your draft and try again shortly.", "DEMO_RATE_LIMIT");
+        throw new ApiError(
+          429,
+          "The demo is busy. Keep your draft and try again shortly.",
+          "DEMO_RATE_LIMIT",
+        );
       throw error;
     }
     if (!bucket || bucket.count > maximum)

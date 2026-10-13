@@ -88,7 +88,7 @@ test("concurrent writes accept one version and explicitly reject stale edits", a
     ),
   );
   assert.deepEqual(results.map((r) => r.status).sort(), [200, 409]);
-  assert.equal((await store.list(BOARD_ID))[0].activity.length, 2);
+  assert.equal((await store.get(BOARD_ID, card.id)).activity.length, 2);
   const stale = results.find((r) => r.status === 409)!;
   assert.equal((await stale.json()).code, "VERSION_CONFLICT");
 });
@@ -298,4 +298,111 @@ test("Mongo seeding uses insert-only upsert and retains the existing document", 
   saved!.title = "Existing work";
   await store.create(BOARD_ID, card, true);
   assert.equal(saved!.title, "Existing work");
+});
+
+test("unchanged edits and moves preserve history and timestamps, but stale no-ops conflict", async () => {
+  const store = new MemoryStore();
+  const original = await store.create(BOARD_ID, card);
+  for (const patch of [
+    { card: { ...card, title: ` ${card.title} ` } },
+    { status: card.status },
+  ]) {
+    const response = await handle(
+      request("PATCH", { ...patch, expectedVersion: 1 }),
+      BOARD_ID,
+      card.id,
+      store,
+    );
+    assert.equal(response.status, 200);
+    assert.deepEqual((await response.json()).card, original);
+  }
+  await store.update(BOARD_ID, card.id, 1, { status: "Done" });
+  const stale = await handle(
+    request("PATCH", { status: "Done", expectedVersion: 1 }),
+    BOARD_ID,
+    card.id,
+    store,
+  );
+  assert.equal(stale.status, 409);
+  assert.equal((await store.get(BOARD_ID, card.id)).activity.length, 2);
+});
+
+test("Mongo no-op still checks the atomic version predicate and cannot replace a concurrent edit", async () => {
+  const original = await new MemoryStore().create(BOARD_ID, card);
+  let race = false;
+  const collection = {
+    findOne: async () => structuredClone(original),
+    findOneAndUpdate: async (filter: object, update: { $set: RecordCard }) => {
+      assert.deepEqual(filter, { boardId: BOARD_ID, id: card.id, version: 1 });
+      assert.deepEqual(update.$set, original);
+      return race ? null : structuredClone(original);
+    },
+  } as unknown as Collection<RecordCard>;
+  const store = new MongoStore(collection);
+  assert.deepEqual(await store.update(BOARD_ID, card.id, 1, card), original);
+  race = true;
+  await assert.rejects(
+    store.update(BOARD_ID, card.id, 1, card),
+    (e) => e instanceof ApiError && e.status === 409,
+  );
+});
+
+test("list returns compact summaries; detail returns complete content with the same access boundaries", async () => {
+  const store = new MemoryStore();
+  const original = await store.create(BOARD_ID, {
+    ...card,
+    context: "x".repeat(20000),
+  });
+  const list = await handle(request("GET"), BOARD_ID, undefined, store);
+  const data = await list.json();
+  assert.deepEqual(Object.keys(data.cards[0]).sort(), [
+    "id",
+    "sample",
+    "status",
+    "summary",
+    "title",
+    "version",
+  ]);
+  assert.ok(JSON.stringify(data).length < 1000);
+  const detail = await handle(request("GET"), BOARD_ID, card.id, store);
+  assert.deepEqual((await detail.json()).card, original);
+  assert.equal(detail.headers.get("cache-control"), "no-store");
+  assert.equal(
+    (await handle(request("GET"), BOARD_ID, "missing", store)).status,
+    404,
+  );
+  assert.equal(
+    (await handle(request("GET"), "other-board", card.id, store)).status,
+    404,
+  );
+  assert.equal(
+    (
+      await handle(
+        request("GET", undefined, BOARD_ID, { host: "remote.example" }),
+        BOARD_ID,
+        card.id,
+        store,
+      )
+    ).status,
+    403,
+  );
+});
+
+test("Mongo list projects out detail and activity fields at the database", async () => {
+  const collection = {
+    find: (filter: object, options: { projection: object }) => {
+      assert.deepEqual(filter, { boardId: BOARD_ID });
+      assert.deepEqual(options.projection, {
+        _id: 0,
+        id: 1,
+        title: 1,
+        summary: 1,
+        status: 1,
+        sample: 1,
+        version: 1,
+      });
+      return { sort: () => ({ toArray: async () => [] }) };
+    },
+  } as unknown as Collection<RecordCard>;
+  assert.deepEqual(await new MongoStore(collection).list(BOARD_ID), []);
 });

@@ -23,7 +23,11 @@ export function authorize(request: Request, board: string) {
     try {
       allowed = new URL(configured ?? "");
     } catch {
-      throw new ApiError(403, "Public demo access is not configured.", "ACCESS_DISABLED");
+      throw new ApiError(
+        403,
+        "Public demo access is not configured.",
+        "ACCESS_DISABLED",
+      );
     }
     if (
       process.env.BANYAN_STORAGE !== "mongodb" ||
@@ -32,7 +36,11 @@ export function authorize(request: Request, board: string) {
       url.origin !== allowed.origin ||
       host !== allowed.host
     )
-      throw new ApiError(403, "Public demo access is not configured for this address.", "ACCESS_DISABLED");
+      throw new ApiError(
+        403,
+        "Public demo access is not configured for this address.",
+        "ACCESS_DISABLED",
+      );
     expectedOrigin = allowed.origin;
   } else {
     if (
@@ -45,9 +53,10 @@ export function authorize(request: Request, board: string) {
     expectedOrigin = `${url.protocol}//${host}`;
   }
   if (
-    !demo && (request.headers.has("forwarded") ||
-    (request.headers.has("x-forwarded-host") &&
-      request.headers.get("x-forwarded-host") !== host))
+    !demo &&
+    (request.headers.has("forwarded") ||
+      (request.headers.has("x-forwarded-host") &&
+        request.headers.get("x-forwarded-host") !== host))
   )
     throw new ApiError(403, "Unexpected forwarded host.", "FORBIDDEN");
   const origin = request.headers.get("origin");
@@ -95,10 +104,16 @@ export async function handle(
     const store = provided ?? (await getStore());
     if (request.method === "GET")
       return Response.json(
-        {
-          cards: await store.list(board),
-          mode: publicDemo() ? "public-demo" : storageMode() === "mock" ? "mock" : "mongodb",
-        },
+        id
+          ? { card: await store.get(board, id) }
+          : {
+              cards: await store.list(board),
+              mode: publicDemo()
+                ? "public-demo"
+                : storageMode() === "mock"
+                  ? "mock"
+                  : "mongodb",
+            },
         { headers: { "Cache-Control": "no-store" } },
       );
     const input = await body(request);
