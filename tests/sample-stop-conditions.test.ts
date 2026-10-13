@@ -51,7 +51,9 @@ function fixture() {
         "id",
         "sample",
         "version",
-        ...FIELDS.filter((field) => field !== "stopCondition"),
+        ...FIELDS.filter(
+          (field) => field !== "stopCondition" && field !== "owner",
+        ),
       ])
         assert.ok(Object.hasOwn(filter, key));
       const record = records.find(
@@ -87,6 +89,8 @@ test("backfill dry run writes nothing; apply fills only known samples and is ide
   const f = fixture();
   f.records[0].status = "Done"; // preserve moves
   f.records[1].stopCondition = "";
+  f.records[0].owner = "Alex Example";
+  delete (f.records[1] as Partial<RecordCard>).owner;
   const before = structuredClone(f.records);
   assert.ok(
     (await backfillSampleStopConditions(f.collection)).every(
@@ -107,6 +111,11 @@ test("backfill dry run writes nothing; apply fills only known samples and is ide
     assert.equal(card.stopCondition, samples[index].stopCondition);
     assert.equal(card.version, 2);
     assert.equal(card.status, before[index].status);
+    assert.equal(card.owner, before[index].owner);
+    assert.equal(
+      Object.hasOwn(card, "owner"),
+      Object.hasOwn(before[index], "owner"),
+    );
     assert.equal(card.createdAt, before[index].createdAt);
     assert.deepEqual(card.activity.slice(0, -1), before[index].activity);
     assert.deepEqual(card.activity.at(-1)?.fields, ["stopCondition"]);

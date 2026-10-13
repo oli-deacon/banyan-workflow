@@ -3,6 +3,7 @@ import type { Activity } from "./server/model";
 const fieldNames: Record<string, string> = {
   title: "title",
   summary: "summary",
+  owner: "owner",
   objective: "objective",
   context: "input context",
   references: "reference links",

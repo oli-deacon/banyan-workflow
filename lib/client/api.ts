@@ -1,5 +1,10 @@
-import { FIELDS, withStopCondition, type Card, type Status } from "../board";
-import type { BoardResponse, CardResponse, EditorCard } from "../card-types";
+import { FIELDS, withCardDefaults, type Card, type Status } from "../board";
+import {
+  summarizeCard,
+  type BoardResponse,
+  type CardResponse,
+  type EditorCard,
+} from "../card-types";
 
 const API = "/api/boards/modernization/cards";
 
@@ -45,9 +50,12 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   }
 }
 
-export const loadBoard = () => request<BoardResponse>(API);
+export const loadBoard = async () => {
+  const board = await request<BoardResponse>(API);
+  return { ...board, cards: board.cards.map(summarizeCard) };
+};
 export const loadCard = async (id: string) =>
-  withStopCondition(
+  withCardDefaults(
     (await request<CardResponse>(`${API}/${encodeURIComponent(id)}`)).card,
   );
 

@@ -2,15 +2,25 @@
 
 **Snapshot: 13 October 2026, Melbourne (Australia/Melbourne).** This records agreed decisions and verified state at that date, not a promise that a preview process is still running.
 
+## Card owner — 14 October 2026
+
+Optional `owner` is a free-text responsibility label limited to 100 characters, with whitespace normalized on API saves. It appears in the basic create/edit form, board footer, reading view and activity history. Blank/missing owners display Unassigned. Samples remain unassigned; no people or business responsibilities were invented. Public-demo help requests fictional names. This does not add user accounts, permissions or notifications.
+
+The API and Mongo adapter persist Owner using the existing version checks. Legacy reads default to blank without writes, and older edit clients omitting Owner preserve saved ownership. Explicit blank clears it. No migration, credential change or live data write is needed. Owner publication awaits approval for this change.
+
+## Publication status — 14 October 2026
+
+Board polish was subsequently approved, merged as `4ed31d05ac2cc919b436e4f6815d7f114de3606c`, and verified READY in production (`dpl_EHMrfgCtR6k5XvjbFUuYRdWqjA79`). All five hosted sample Stop Conditions were filled through the normal card editor and independently verified after reload on 13 October at 23:24–23:27 UTC (14 October Melbourne). **That sample update is complete; do not rerun the backfill or request new database access.** The preparation notes below are historical.
+
 ## Board polish prepared — 14 October 2026
 
-Cards have roomier summary/footer spacing, softer corners and refined title/summary hierarchy. Columns have subtle stage-specific surfaces and aligned desktop heights; counts use consistent badges. Toolbar, Add card and Move controls share restrained hover/focus treatments. Move targets are at least 44px high for coarse pointers, with SVG arrows independent of installed fonts. Done cards use a quieter surface and a decorative checkmark that updates with moves and Undo. The existing cursor glow and reduced-motion handling remain intact. This is a presentation-only change; no data or workflow semantics changed. Publication awaits approval for this change.
+Cards have roomier summary/footer spacing, softer corners and refined title/summary hierarchy. Columns have subtle stage-specific surfaces and aligned desktop heights; counts use consistent badges. Toolbar, Add card and Move controls share restrained hover/focus treatments. Move targets are at least 44px high for coarse pointers, with SVG arrows independent of installed fonts. Done cards use a quieter surface and a decorative checkmark that updates with moves and Undo. The existing cursor glow and reduced-motion handling remain intact. This is a presentation-only change; no data or workflow semantics changed. This polish was subsequently published; see publication status above.
 
 ## Card Border Glow — 14 October 2026
 
 Board cards now use a cursor-directed mesh-gradient border and soft edge glow adapted from React Bits Border Glow. The original light card layout remains. Pointer work is batched to animation frames without React renders; leaving, dragging and unmounting clear pending glow work. Touch and reduced-motion users do not get cursor tracking, and keyboard focus receives a static colored border with existing focus outlines intact. All decorative layers ignore pointer input. No dependency or data changes. Attribution and the upstream license are in `THIRD_PARTY_NOTICES.md`.
 
-Stop Condition PR #1 was subsequently approved by the user, merged as `fdcb335155a7284ae4cde02e70842b6d8e8b8a6e`, and deployed READY to production. Connector reads confirmed the five live samples still match the source task context and have blank Stop Condition values. The direct environment network path remains blocked and MongoDB write configuration is unavailable, so the live sample backfill remains unapplied. Historical preparation notes below describe the earlier state.
+Stop Condition PR #1 was subsequently approved by the user, merged as `fdcb335155a7284ae4cde02e70842b6d8e8b8a6e`, and deployed READY to production. The five live sample Stop Conditions were subsequently filled and verified as recorded above. Historical preparation notes below describe the earlier state.
 
 ## Stop Condition change prepared — 13 October 2026
 

@@ -240,6 +240,9 @@ export function CardEditor({
                 </span>
                 {initial.status}
               </span>
+              <p className="reading-owner">
+                <span>Owner</span> {initial.owner || "Unassigned"}
+              </p>
               {initial.summary && (
                 <p className="reading-summary">{initial.summary}</p>
               )}
@@ -316,6 +319,23 @@ export function CardEditor({
                     onChange={(event) => update("summary", event.target.value)}
                     placeholder="A short description for the board."
                   />
+                </label>
+                <label>
+                  Owner
+                  <input
+                    aria-label="Owner"
+                    aria-describedby="owner-hint"
+                    value={draft.owner}
+                    onChange={(event) => update("owner", event.target.value)}
+                    maxLength={100}
+                    placeholder="Unassigned"
+                    autoComplete="off"
+                  />
+                  <span id="owner-hint" className="field-hint">
+                    {publicDemo
+                      ? "Use a fictional name for this public demo. Leave blank for unassigned."
+                      : "Who is responsible for this card? Leave blank for unassigned."}
+                  </span>
                 </label>
                 <label className="status-field">
                   Status

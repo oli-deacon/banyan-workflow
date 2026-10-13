@@ -1,6 +1,6 @@
 import { MongoClient, type Collection } from "mongodb";
 import { summarizeCard, type CardSummary } from "../card-types";
-import { type Card, samples, withStopCondition } from "../board";
+import { type Card, samples, withCardDefaults } from "../board";
 import { collectionName, publicDemo } from "./access";
 import {
   ApiError,
@@ -79,7 +79,7 @@ export class MongoStore implements Store {
     public checkDemoWrite?: () => Promise<void>,
   ) {}
   async list(boardId: string) {
-    return this.collection
+    const cards = await this.collection
       .find<CardSummary>(
         { boardId },
         {
@@ -88,6 +88,7 @@ export class MongoStore implements Store {
             id: 1,
             title: 1,
             summary: 1,
+            owner: 1,
             status: 1,
             sample: 1,
             version: 1,
@@ -96,6 +97,7 @@ export class MongoStore implements Store {
       )
       .sort({ createdAt: 1, id: 1 })
       .toArray();
+    return cards.map(summarizeCard);
   }
   async get(boardId: string, id: string) {
     const card = await this.collection.findOne(
@@ -103,7 +105,7 @@ export class MongoStore implements Store {
       { projection: { _id: 0 } },
     );
     if (!card) throw missing();
-    return withStopCondition(card);
+    return withCardDefaults(card);
   }
   async create(boardId: string, card: Card, seed = false) {
     const record = newRecord(card, boardId, seed);
@@ -166,7 +168,7 @@ export class MongoStore implements Store {
       { returnDocument: "after", projection: { _id: 0 } },
     );
     if (!saved) throw conflict();
-    return withStopCondition(saved);
+    return withCardDefaults(saved);
   }
 }
 export async function seed(store: Store) {

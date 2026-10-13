@@ -359,7 +359,7 @@ test("a successful background read does not erase an uncertain move outcome", as
   expect(state.card.version).toBe(1);
 });
 
-test("legacy details without stop condition remain readable and editable", async ({
+test("legacy details without optional fields remain readable and editable", async ({
   page,
 }) => {
   const legacy = newRecord(
@@ -367,6 +367,7 @@ test("legacy details without stop condition remain readable and editable", async
     "modernization",
   );
   delete (legacy as Partial<typeof legacy>).stopCondition;
+  delete (legacy as Partial<typeof legacy>).owner;
   await page.route(`**${API}**`, async (route) => {
     if (new URL(route.request().url()).pathname === API)
       return route.fulfill({
@@ -375,6 +376,7 @@ test("legacy details without stop condition remain readable and editable", async
     return route.fulfill({ json: { card: legacy } });
   });
   await page.goto("/");
+  await expect(page.locator(".owner-name")).toHaveText("Unassigned");
   await page.getByRole("button", { name: /^Legacy sample/ }).click();
   await expect(
     page.getByRole("heading", { name: "Stop Condition" }),
@@ -426,3 +428,51 @@ for (const width of [390, 1440]) {
     });
   });
 }
+
+test("owner creates, edits, reloads and clears through the real API", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "New card" }).click();
+  const title = `Owner regression ${Date.now()}`;
+  await page.getByLabel("Title Required").fill(title);
+  const owner = page.getByRole("textbox", { name: "Owner", exact: true });
+  await expect(owner).toHaveAttribute("maxlength", "100");
+  await owner.fill("Alex Example");
+  await page.getByRole("button", { name: "Create card", exact: true }).click();
+  const tile = page
+    .locator(".card")
+    .filter({
+      has: page.getByRole("button", { name: new RegExp(`^${title}`) }),
+    });
+  await expect(tile.locator(".owner-name")).toHaveText("Alex Example");
+  await page.getByRole("button", { name: new RegExp(`^${title}`) }).click();
+  await expect(page.locator(".reading-owner")).toContainText("Alex Example");
+  await page.getByRole("button", { name: "Edit card", exact: true }).click();
+  await owner.fill("Sam Example");
+  await page.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.reload();
+  await expect(tile.locator(".owner-name")).toHaveText("Sam Example");
+  await page.screenshot({
+    path: testInfo.outputPath("owner-mobile.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.screenshot({
+    path: testInfo.outputPath("owner-desktop.png"),
+    fullPage: true,
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.getByRole("button", { name: new RegExp(`^${title}`) }).click();
+  await expect(page.locator(".reading-owner")).toContainText("Sam Example");
+  await page.getByRole("button", { name: "Edit card", exact: true }).click();
+  await owner.fill("");
+  await page.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(tile.locator(".owner-name")).toHaveText("Unassigned");
+});

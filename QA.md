@@ -1,5 +1,14 @@
 ## Board polish — 14 October 2026
 
+## Card owner — 14 October 2026
+
+- Optional free-text Owner is available in create/edit, board summaries, reading details and activity. Blank/missing values display Unassigned; public-demo help asks for fictional names. Names are limited to 100 characters and whitespace is normalized on save.
+- `npm test`: 34 passing. Owner coverage includes API create/list/read/edit/clear, validation boundaries and types, legacy omission preserving saved owners, Mongo persistence/defaults and stale version rejection. The existing stop-condition backfill regression also verifies both missing and assigned owners are preserved.
+- `BANYAN_CHROMIUM_PATH=/usr/bin/chromium npm run test:browser`: 13 passing. The real memory API test creates/edits/reloads/clears ownership; legacy responses remain readable. Desktop 1440px and mobile 390px screenshots were inspected. The first owner test run exposed an exact accessible-name locator mismatch for the empty-summary placeholder; correcting the locator produced a clean full suite.
+- Lint, typecheck and production build passed. React review found no new effects, render loops or dependencies. All mutations used the isolated memory mock, with Mongo behavior covered by test doubles. No live writes, credentials, migration or production deployment were performed for Owner. Safari, Firefox and physical-device checks remain unperformed.
+- Prior publication update: board polish is deployed at main `4ed31d05ac2cc919b436e4f6815d7f114de3606c`. The parent independently verified all five hosted sample Stop Conditions after editing/reload at 23:24–23:27 UTC on 13 October. The old pending-backfill notes below are historical; no rerun or new database access is needed.
+
+
 - Refined card spacing and typography; added subtle column surfaces, aligned desktop column heights, consistent count badges, toolbar/Add/Move interaction treatments and quieter completed cards with decorative SVG checks. Move arrows now use SVG, and coarse-pointer Move controls have 44px minimum targets.
 - 32 unit/API tests and all 12 existing Chromium browser regressions passed. Lint, typecheck and production build passed.
 - Focused mock-mode checks at 1440, 768 and 390px verified no horizontal overflow, distinct column surfaces, completion marks, accessible control names, keyboard focus, touch targets, drag/drop and Move/Undo (including completion-style updates). A second pass confirmed cursor glow, pointer reset, reduced motion, touch opening and card details remained functional. No browser page errors were observed; desktop/mobile screenshots were inspected.

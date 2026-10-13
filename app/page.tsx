@@ -257,9 +257,20 @@ export default function Board() {
                         </span>
                       </button>
                       <footer className="card-footer">
-                        {!card.sample && (
-                          <span className="sample-label">WORK ITEM</span>
-                        )}
+                        <div className="card-meta">
+                          {!card.sample && (
+                            <span className="sample-label">WORK ITEM</span>
+                          )}
+                          <span className="card-owner">
+                            <span className="owner-label">Owner</span>
+                            <span
+                              className="owner-name"
+                              title={card.owner || "Unassigned"}
+                            >
+                              {card.owner || "Unassigned"}
+                            </span>
+                          </span>
+                        </div>
                         <label className="move-control">
                           <span>Move</span>
                           <select

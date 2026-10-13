@@ -143,10 +143,15 @@ export async function handle(
         if ("status" in input)
           throw new ApiError(400, "Choose one update type.");
         patch = parseCard(input.card);
-        // An older client omitting the new field must not erase saved context.
-        if (!("stopCondition" in object(input.card)))
-          patch.stopCondition = (await store.get(board, id)).stopCondition ?? "";
         if (patch.id !== id) throw new ApiError(400, "Card ID does not match.");
+        // Older clients must not erase optional fields they cannot edit.
+        const supplied = object(input.card);
+        if (!("stopCondition" in supplied) || !("owner" in supplied)) {
+          const current = await store.get(board, id);
+          if (!("stopCondition" in supplied))
+            patch.stopCondition = current.stopCondition ?? "";
+          if (!("owner" in supplied)) patch.owner = current.owner ?? "";
+        }
       } else {
         if (!isStatus(input.status))
           throw new ApiError(400, "Choose a valid status.");
