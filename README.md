@@ -1,0 +1,99 @@
+# Banyan Workflow
+
+For new coding sessions, start with [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) for the dated decisions, architecture, verification and open ideas.
+
+A Next.js / React / TypeScript workflow board with a server-side API and the official MongoDB Node driver. The exact fixed columns remain **To Do**, **In Progress**, **Ready for Review**, **Done**. Cards support creation, editing, desktop drag/drop, a keyboard/touch Move control, an expandable detail panel, and activity history.
+
+## Current connection status
+
+**Live Atlas connection verified on 2026-10-13.** The original local environment uses an existing Atlas cluster with the isolated database `banyan_workflow` and collection `cards`. Five synthetic example cards were seeded. Repeating the seed left all records unchanged.
+
+The dedicated application user was verified to have exactly `readWrite` on `banyan_workflow`; Atlas shows its resource scope restricted to one cluster. The approved connection is stored in the ignored `.env.local` with owner-only (`0600`) permissions. No other application's credential was copied, and no allowlist, paid infrastructure or existing application data was changed.
+
+Live create/edit/move, stale-version conflicts and identical record persistence across a full app restart were verified. The temporary verification record was removed only after checking it had no intervening edits. Brave reload shows five cards and **MongoDB · local development access**.
+
+This remains a local development application. The API is disabled in production, even if its environment variables are set. It is not an authenticated team service.
+
+## Clone and run locally
+
+```sh
+git clone https://github.com/oli-deacon/banyan-workflow.git
+cd banyan-workflow
+npm ci
+npm run dev:mock -- --port 3101
+```
+
+Requires Node.js 22+ and npm. This starts the explicit memory-only mock without database credentials. For Atlas access, configure your own approved `.env.local` using `.env.example`; credentials are not included in this repository.
+
+## Run with Atlas
+
+```sh
+npm run dev -- --port 3101
+```
+
+Open http://127.0.0.1:3101. Keep the development terminal running; if the Mac or preview process stops, restart it with the command above. The credentials already configured locally must not be pasted into chat, source control or browser-exposed variables.
+
+## Run the explicit local mock mode
+
+Requires Node.js 22+ and npm:
+
+```sh
+npm ci
+npm run dev:mock -- --port 3101
+```
+
+Open http://127.0.0.1:3101. The UI explicitly displays **MOCK MODE · memory only, resets on restart**. Mock state lives in the server process, survives browser reloads and is shared between local browser tabs. It resets on server restart. It never claims to have saved to Atlas. The server binds to loopback; do not expose it through a public tunnel or proxy.
+
+The original browser localStorage value is neither read nor written by the new UI. It is not imported automatically. Drafts stay in the open editor after a failed write or version conflict; they are not persisted across a page reload. Copy a conflicted draft before closing and refreshing the board.
+
+## Connection configuration and seeding
+
+The approved `.env.local` contains `BANYAN_LOCAL_API=1`, `BANYAN_STORAGE=mongodb` and a private `MONGODB_URI`. `.env.example` documents the variable names without credentials. Any future credential, scope or network changes need separate approval.
+
+To rerun the insert-only synthetic seed:
+
+```sh
+npm run seed
+```
+
+Seeding is explicit, not a side effect of loading the page in MongoDB mode. Existing cards are never overwritten. A connection error remains visible; the app never silently falls back to browser or mock storage. No network access changes are automated.
+
+## Storage model and write protocol
+
+- Fixed isolated database: `banyan_workflow`.
+- Collection: `cards`; active board ID: `modernization`.
+- Unique compound index: `{ boardId: 1, id: 1 }`.
+- Each document contains one card with stable ID, board ID, version, timestamps and embedded activity. There is no single board-wide card-array document.
+- Creation starts at version 1. Updates and moves require `expectedVersion`; the MongoDB update predicate includes board ID, card ID and that version. Exactly one concurrent write can win. A stale write returns HTTP 409 and cannot overwrite the newer card.
+- Activity changes atomically with the card in the same document. It records server time, version, action, changed field names, status transitions, and the local-development actor. The most recent **500 events per card** are retained; this is operational history, not an immutable audit archive.
+- Synthetic seed IDs are stable. Seeding uses `$setOnInsert` with upsert and never resets edited or existing cards. Running the seed repeatedly is safe.
+- Moving a card changes workflow status plus its version/timestamp/history. No agent execution or harness state is inferred or launched.
+
+API routes: `GET/POST /api/boards/modernization/cards` and `PATCH /api/boards/modernization/cards/:id`. PATCH accepts a complete `card` or a `status`, with `expectedVersion`. The server validates field types, title and size limits, status, HTTP(S) links, unknown fields and body size. IDs and board boundaries are checked; server metadata cannot be supplied through card payloads. The client retains a new card's ID on uncertain write retries and reports duplicate creation rather than silently creating another item.
+
+## Local access boundary / next authentication step
+
+The API requires explicit `BANYAN_LOCAL_API=1`, a non-production process and a loopback host. Writes require same-origin JSON requests; cross-site requests and unexpected forwarded hosts are rejected. All supplied run scripts bind to `127.0.0.1`. These are development restrictions, **not user authentication**. Anyone able to access this local server has the same local-development identity.
+
+Before team use: add a server-validated login session and a board-membership store keyed by board ID and authenticated user ID, with reader/editor roles. Enforce membership on every read/write, derive activity actors from the session, and replace the production deny gate only after authorization tests pass. Account/provider selection, OAuth grants, credential creation and deployment require separate approval. Do not treat a supplied board ID as proof of membership.
+
+## Checks and files
+
+```sh
+npm test
+npm run lint
+npm run typecheck
+npm run build
+```
+
+- `lib/server/model.ts`: strict request model, versions and activity.
+- `lib/server/store.ts`: MongoDB adapter, explicit in-memory mock and insert-only seed.
+- `lib/server/api.ts`: local access gate, bounded JSON parsing and API errors.
+- `app/api/boards/[boardId]/cards/`: route handlers.
+- `app/page.tsx`: existing board UI connected to the API, request locks, retained drafts, refresh and activity.
+- `scripts/seed.ts`: explicit synthetic Atlas seed command.
+- `tests/server.test.ts`: server/API and mocked Mongo adapter regressions.
+- `tests/board.test.ts`: original model/legacy codec regressions (the UI no longer uses that codec).
+- `QA.md`: observed checks and live-Atlas limitations.
+
+Public source repository: https://github.com/oli-deacon/banyan-workflow. Publishing the source does not deploy the application or include local credentials or live database records. No public deployment, paid resources, real personal data, external integrations or agent harness has been created.

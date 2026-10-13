@@ -1,0 +1,30 @@
+{
+  "name": "banyan-workflow",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "dev:mock": "BANYAN_LOCAL_API=1 BANYAN_STORAGE=mock next dev --hostname 127.0.0.1",
+    "seed": "tsx scripts/seed.ts"
+  },
+  "dependencies": {
+    "mongodb": "^7.7.0",
+    "next": "^16.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "^16.0.0",
+    "tsx": "^4",
+    "typescript": "^5"
+  }
+}
