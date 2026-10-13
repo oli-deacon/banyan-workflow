@@ -1,3 +1,15 @@
+# Hosted public demo verification — 13 October 2026
+
+Target: https://banyan-workflow.vercel.app. Shared saved synthetic board with no login; live verification pending deployment.
+
+- Added seven regression tests covering hosted CRUD/conflicts and actor labels, denied origins/hosts/boards, fail-closed configuration, fixed collection isolation, blocked writes on limiter failure, shared atomic rate counters, and full-demo creation rejection.
+- All 22 regression tests passed. Type checking passed after correcting a test type; production build status is recorded below after completion.
+- Seeded five synthetic cards into the separate `cards_public_demo` collection. The local `cards` collection has five records; a private checksum baseline was captured before hosted tests.
+- Vercel production secrets configured with explicit user approval for reuse of the app credential. No Atlas network-rule or permission change was made.
+- GitHub integration is not connected; deployments use the Vercel CLI.
+
+The sections below are historical evidence for the original local-only implementation.
+
 # Server-backed version verification
 
 ## Live Atlas verification — 2026-10-13

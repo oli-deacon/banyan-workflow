@@ -217,7 +217,7 @@ export default function Board() {
           banyan<span className="brand-sub"> / workflow</span>
         </Link>
         <span className="local-tag">
-          <span aria-hidden="true">●</span> Personal workspace
+          <span aria-hidden="true">●</span> {mode === "public-demo" ? "Shared public demo" : "Personal workspace"}
         </span>
       </header>
       <section className="workspace-heading">
@@ -242,7 +242,9 @@ export default function Board() {
           Board <span>{cards.length} cards</span>
         </div>
         <p>
-          {mode === "mongodb"
+          {mode === "public-demo"
+            ? "Shared demo · changes saved for everyone"
+            : mode === "mongodb"
             ? "MongoDB · local development access"
             : mode === "mock"
               ? "MOCK MODE · memory only, resets on restart"
@@ -252,6 +254,12 @@ export default function Board() {
           {busy ? "Working…" : "Refresh board"}
         </button>
       </div>
+      {mode === "public-demo" && (
+        <div className="warning">
+          <strong>Public demo — synthetic data only.</strong> Anyone can view and edit these cards.
+          Do not enter personal, customer or confidential work information. Use Refresh board to see others’ changes.
+        </div>
+      )}
       {storageWarning && (
         <div className="warning" role="alert">
           {storageWarning}
@@ -382,6 +390,7 @@ export default function Board() {
       </footer>
       {editor && (
         <CardEditor
+          publicDemo={mode === "public-demo"}
           initial={editor}
           onClose={close}
           onSave={async (card) => {
@@ -395,10 +404,12 @@ export default function Board() {
 }
 
 function CardEditor({
+  publicDemo,
   initial,
   onClose,
   onSave,
 }: {
+  publicDemo: boolean;
   initial: WorkflowCard;
   onClose: () => void;
   onSave: (card: WorkflowCard) => Promise<void>;
@@ -516,6 +527,9 @@ function CardEditor({
           </div>
         </header>
         <fieldset disabled={saving} className="detail-body">
+          {publicDemo && (
+            <p className="warning">Synthetic data only. This card and its edits are visible to everyone.</p>
+          )}
           <div className="detail-intro">
             <label>
               Title <span className="required">Required</span>

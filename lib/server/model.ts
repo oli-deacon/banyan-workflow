@@ -1,11 +1,12 @@
 import { Card, FIELDS, isStatus, validateCard } from "../board";
+import { publicDemo } from "./access";
 export const BOARD_ID = "modernization";
 export const DATABASE = "banyan_workflow";
 export type Activity = {
   version: number;
   at: string;
   action: "created" | "edited" | "moved" | "seeded";
-  actor: "local-developer" | "sample-seed";
+  actor: "local-developer" | "sample-seed" | "public-demo-visitor";
   fields: string[];
   from?: string;
   to?: string;
@@ -73,7 +74,7 @@ export function newRecord(
         version: 1,
         at,
         action: seeded ? "seeded" : "created",
-        actor: seeded ? "sample-seed" : "local-developer",
+        actor: seeded ? "sample-seed" : publicDemo() ? "public-demo-visitor" : "local-developer",
         fields: [],
       },
     ],
@@ -93,7 +94,7 @@ export function revision(
     version: current.version + 1,
     at,
     action: fields.length === 1 && moved ? "moved" : "edited",
-    actor: "local-developer",
+    actor: publicDemo() ? "public-demo-visitor" : "local-developer",
     fields,
     ...(moved ? { from: current.status, to: patch.status } : {}),
   };

@@ -1,5 +1,6 @@
 import { MongoClient, type Collection } from "mongodb";
 import { type Card, samples } from "../board";
+import { collectionName, publicDemo } from "./access";
 import {
   ApiError,
   BOARD_ID,
@@ -9,6 +10,7 @@ import {
   type RecordCard,
 } from "./model";
 export interface Store {
+  checkDemoWrite?: () => Promise<void>;
   list(boardId: string): Promise<RecordCard[]>;
   create(boardId: string, card: Card, seed?: boolean): Promise<RecordCard>;
   update(
@@ -63,7 +65,10 @@ export class MemoryStore implements Store {
   }
 }
 export class MongoStore implements Store {
-  constructor(private collection: Collection<RecordCard>) {}
+  constructor(
+    private collection: Collection<RecordCard>,
+    public checkDemoWrite?: () => Promise<void>,
+  ) {}
   async list(boardId: string) {
     return this.collection
       .find({ boardId }, { projection: { _id: 0 } })
@@ -84,6 +89,8 @@ export class MongoStore implements Store {
           { projection: { _id: 0 } },
         ))!;
       }
+      if (publicDemo() && await this.collection.countDocuments({ boardId }, { limit: 200 }) >= 200)
+        throw new ApiError(429, "The shared demo is full. Please edit an existing card instead.", "DEMO_FULL");
       await this.collection.insertOne({ ...record });
       return record;
     } catch (error) {
@@ -154,9 +161,16 @@ export async function getStore(): Promise<Store> {
       });
       try {
         await client.connect();
-        const collection = client.db(DATABASE).collection<RecordCard>("cards");
+        const database = client.db(DATABASE);
+        const collection = database.collection<RecordCard>(collectionName());
         await collection.createIndex({ boardId: 1, id: 1 }, { unique: true });
-        return new MongoStore(collection);
+        let checkDemoWrite: (() => Promise<void>) | undefined;
+        if (publicDemo()) {
+          const limits = database.collection<DemoWriteBucket>("public_demo_limits");
+          await limits.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+          checkDemoWrite = () => checkDemoWriteLimit(limits);
+        }
+        return new MongoStore(collection, checkDemoWrite);
       } catch {
         await client.close();
         throw new ApiError(
@@ -171,4 +185,39 @@ export async function getStore(): Promise<Store> {
     });
   }
   return globalStore.banyanStore;
+}
+
+export type DemoWriteBucket = { _id: string; count: number; expiresAt: Date };
+
+export async function checkDemoWriteLimit(
+  limits: Collection<DemoWriteBucket>,
+  now = Date.now(),
+) {
+  // Shared across function instances; rejected attempts also consume quota.
+  for (const [window, maximum] of [[60000, 30], [86400000, 500]]) {
+    const start = Math.floor(now / window) * window;
+    let bucket;
+    try {
+      bucket = await limits.findOneAndUpdate(
+        { _id: `${window}:${start}` },
+        {
+          $inc: { count: 1 },
+          $setOnInsert: { expiresAt: new Date(start + window * 2) },
+        },
+        { upsert: true, returnDocument: "after" },
+      );
+    } catch (error) {
+      if ((error as { code?: number }).code === 11000)
+        throw new ApiError(429, "The demo is busy. Keep your draft and try again shortly.", "DEMO_RATE_LIMIT");
+      throw error;
+    }
+    if (!bucket || bucket.count > maximum)
+      throw new ApiError(
+        429,
+        window === 60000
+          ? "The shared demo is busy. Keep your draft and try again in a minute."
+          : "The demo has reached today's edit limit. Keep your draft and try again tomorrow.",
+        "DEMO_RATE_LIMIT",
+      );
+  }
 }

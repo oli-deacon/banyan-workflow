@@ -2,6 +2,14 @@
 
 **Snapshot: 13 October 2026, Melbourne (Australia/Melbourne).** This records agreed decisions and verified state at that date, not a promise that a preview process is still running.
 
+## Public demo update — 13 October 2026
+
+The user authorized a Vercel-hosted, shared saved board with no login, exclusively for synthetic data. The deployment target is https://banyan-workflow.vercel.app; consult QA.md for verified live status. The Vercel project is `banyan-workflow`. Deployment is via CLI; GitHub integration is not connected, so pushes do not automatically deploy.
+
+`BANYAN_ACCESS=public-demo` explicitly enables hosted access, with `BANYAN_STORAGE=mongodb` and exact HTTPS `BANYAN_PUBLIC_ORIGIN`. The public API uses only `cards_public_demo`; the original local API uses only `cards`. `public_demo_limits` holds expiring shared counters (30 writes/minute, 500/UTC day). A best-effort creation limit applies at 200 cards. Existing payload bounds, atomic versions and activity retention remain. Hosted activity identifies an anonymous `public-demo-visitor`. The UI warns that anyone can view/edit and that all content must be synthetic. Refresh is manual.
+
+The user explicitly approved storing the existing app credential as a Vercel server-only production secret. It retains database-wide permission; collection isolation is in code. Do not broaden its permissions or Atlas network rules without authorization. Public-demo choices supersede the historical local-only snapshot below; private team authentication remains unbuilt.
+
 ## Start here in a new coding session
 
 1. Read `AGENTS.md`, this file, `README.md`, `QA.md` and `package.json`. Before code changes, follow the repository instruction to read the relevant current Next.js guide in `node_modules/next/dist/docs/`.
@@ -9,7 +17,7 @@
 3. Check whether the preview port is occupied before starting anything. Verify the API/UI storage mode and connection health without printing secrets. Do not reset data, rerun setup or reuse another app's credentials merely to reproduce the previous session.
 4. Use focused tests and browser checks for changes. Update this context and QA evidence when decisions or verified behavior change.
 
-The source repository is https://github.com/oli-deacon/banyan-workflow. A clone requires its own local configuration; `localhost` always refers to the machine running the browser. No hosted preview exists. Codex sidebar registration is user-managed; folder existence does not prove registration was completed.
+The source repository is https://github.com/oli-deacon/banyan-workflow. A clone requires its own local configuration; `localhost` always refers to the machine running the browser. A hosted synthetic demo is now authorized; see the public-demo update above. Codex sidebar registration is user-managed; folder existence does not prove registration was completed.
 
 ## Approved and built
 
@@ -40,7 +48,7 @@ Next.js App Router, React, TypeScript, custom CSS and the official MongoDB Node 
 | `scripts/seed.ts` | Explicit, idempotent synthetic seeding |
 | `tests/board.test.ts`, `tests/server.test.ts` | Shared-model/legacy-codec and API/store regressions |
 
-The only active board is `modernization`. Each card is an individual document with a stable ID and board ID; the unique index is `{ boardId: 1, id: 1 }`. Creates start at version 1. Updates match board ID, card ID and `expectedVersion` atomically; stale writes return **409 VERSION_CONFLICT** without overwriting newer work. Activity is embedded and updated atomically with the card; the latest **500 events per card** are retained. Actors currently represent local development, not authenticated people. This is not an immutable audit archive.
+The only active board is `modernization`. Each card is an individual document with a stable ID and board ID; the unique index is `{ boardId: 1, id: 1 }`. Creates start at version 1. Updates match board ID, card ID and `expectedVersion` atomically; stale writes return **409 VERSION_CONFLICT** without overwriting newer work. Activity is embedded and updated atomically with the card; the latest **500 events per card** are retained. Actors represent either local development or anonymous public-demo visitors, not authenticated people. This is not an immutable audit archive.
 
 ## Live persistence and access boundary
 
@@ -50,7 +58,7 @@ The approved live configuration uses `BANYAN_LOCAL_API`, `BANYAN_STORAGE` (set t
 
 **Atlas is the current live persistence mode.** The original browser localStorage data is neither read, written nor imported by the current UI. The optional in-memory mock is explicit, labelled and resets on server restart; it is not a fallback for failed Atlas writes. Seeding uses stable synthetic IDs and `$setOnInsert`, preserving existing cards.
 
-The API is local development only: explicit opt-in, loopback host and same-origin write checks; production API requests are denied. Scripts bind to `127.0.0.1`. These restrictions are not authentication: local callers share the same development identity. There is no team login or board-membership authorization. No public tunnel, hosted preview or deployment was created as part of the application work. Public source publication was authorized separately on 13 October 2026.
+The original local API mode uses: explicit opt-in, loopback host and same-origin write checks; production API requests are denied unless explicit public-demo configuration is valid. Scripts bind to `127.0.0.1`. These restrictions are not authentication: local callers share the same development identity. There is no team login or board-membership authorization. Public source publication and a synthetic Vercel demo were separately authorized on 13 October 2026. No public tunnel was created.
 
 ## Run and test
 
@@ -69,7 +77,7 @@ npm run typecheck
 npm run build
 ```
 
-`npm run seed` explicitly inserts missing synthetic examples; it is not needed on every startup. `npm run dev:mock -- --port 3101` selects the separate, memory-only mock for deliberate local testing. `npm start -- --port 3101` runs a production build, but its write/read API remains denied pending authentication work; it is not a working team-preview command.
+`npm run seed` explicitly inserts missing synthetic examples; it is not needed on every startup. `npm run dev:mock -- --port 3101` selects the separate, memory-only mock for deliberate local testing. `npm start -- --port 3101` runs a production build, but its API remains denied unless public-demo mode and the exact public origin are configured.
 
 ## Latest evidence and limitations
 
@@ -83,7 +91,7 @@ These are options for a future decision, not requirements, estimates or commitme
 
 - A clearly labelled **simulated** agent execution flow with an explicit **Start run**, progress/evidence and review handoff. Keep execution separate from board status.
 - Shared team authentication and authorization. A minimal approach would validate server sessions and enforce board membership/roles on every read/write, deriving activity actors from authenticated identity.
-- A protected hosted preview, after access controls are agreed and implemented.
+- A protected hosted environment for private data, after authenticated access controls are agreed and implemented.
 - Eventual real harness integration, requiring its own scope and approval.
 
 **Langfuse / agent-retro-kit was a separate exploration. Neither is implemented or authorized as a Banyan integration.** Do not add integrations, OAuth grants, accounts, paid infrastructure, deployment or broaden database/network access based on these notes.

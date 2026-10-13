@@ -1,10 +1,13 @@
 import { isStatus } from "../board";
 import { ApiError, BOARD_ID, exact, object, parseCard, version } from "./model";
 import { getStore, storageMode, type Store } from "./store";
+import { publicDemo } from "./access";
 export function authorize(request: Request, board: string) {
+  const demo = publicDemo();
   if (
-    process.env.NODE_ENV === "production" ||
-    process.env.BANYAN_LOCAL_API !== "1"
+    !demo &&
+    (process.env.NODE_ENV === "production" ||
+      process.env.BANYAN_LOCAL_API !== "1")
   )
     throw new ApiError(
       403,
@@ -13,17 +16,40 @@ export function authorize(request: Request, board: string) {
     );
   const url = new URL(request.url);
   const host = request.headers.get("host");
+  let expectedOrigin: string;
+  if (demo) {
+    const configured = process.env.BANYAN_PUBLIC_ORIGIN;
+    let allowed: URL;
+    try {
+      allowed = new URL(configured ?? "");
+    } catch {
+      throw new ApiError(403, "Public demo access is not configured.", "ACCESS_DISABLED");
+    }
+    if (
+      process.env.BANYAN_STORAGE !== "mongodb" ||
+      allowed.protocol !== "https:" ||
+      allowed.origin !== configured ||
+      url.origin !== allowed.origin ||
+      host !== allowed.host
+    )
+      throw new ApiError(403, "Public demo access is not configured for this address.", "ACCESS_DISABLED");
+    expectedOrigin = allowed.origin;
+  } else {
+    if (
+      !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) ||
+      !host ||
+      !/^(localhost|127\.0\.0\.1|\[::1\])(?::[0-9]{1,5})?$/.test(host)
+    )
+      throw new ApiError(403, "Local access only.", "FORBIDDEN");
+    // Next dev normalizes request.url to localhost; validate the original Host separately.
+    expectedOrigin = `${url.protocol}//${host}`;
+  }
   if (
-    !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) ||
-    !host ||
-    !/^(localhost|127\.0\.0\.1|\[::1\])(?::[0-9]{1,5})?$/.test(host) ||
     request.headers.has("forwarded") ||
     (request.headers.has("x-forwarded-host") &&
       request.headers.get("x-forwarded-host") !== host)
   )
-    throw new ApiError(403, "Local access only.", "FORBIDDEN");
-  // Next dev normalizes request.url to localhost; validate the original Host separately.
-  const expectedOrigin = `${url.protocol}//${host}`;
+    throw new ApiError(403, "Unexpected forwarded host.", "FORBIDDEN");
   const origin = request.headers.get("origin");
   if (
     (origin && origin !== expectedOrigin) ||
@@ -71,11 +97,16 @@ export async function handle(
       return Response.json(
         {
           cards: await store.list(board),
-          mode: storageMode() === "mock" ? "mock" : "mongodb",
+          mode: publicDemo() ? "public-demo" : storageMode() === "mock" ? "mock" : "mongodb",
         },
         { headers: { "Cache-Control": "no-store" } },
       );
     const input = await body(request);
+    if (publicDemo()) {
+      if (!store.checkDemoWrite)
+        throw new ApiError(503, "The demo cannot accept changes right now.");
+      await store.checkDemoWrite();
+    }
     if (request.method === "POST") {
       exact(input, ["card"]);
       const card = parseCard(input.card);

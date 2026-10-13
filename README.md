@@ -4,15 +4,25 @@ For new coding sessions, start with [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) for
 
 A Next.js / React / TypeScript workflow board with a server-side API and the official MongoDB Node driver. The exact fixed columns remain **To Do**, **In Progress**, **Ready for Review**, **Done**. Cards support creation, editing, desktop drag/drop, a keyboard/touch Move control, an expandable detail panel, and activity history.
 
-## Current connection status
+## Shared public demo
 
-**Live Atlas connection verified on 2026-10-13.** The original local environment uses an existing Atlas cluster with the isolated database `banyan_workflow` and collection `cards`. Five synthetic example cards were seeded. Repeating the seed left all records unchanged.
+Hosted-demo target: https://banyan-workflow.vercel.app. Deployment verification is recorded in `QA.md`.
 
-The dedicated application user was verified to have exactly `readWrite` on `banyan_workflow`; Atlas shows its resource scope restricted to one cluster. The approved connection is stored in the ignored `.env.local` with owner-only (`0600`) permissions. No other application's credential was copied, and no allowlist, paid infrastructure or existing application data was changed.
+This is a shared, saved board for **synthetic data only**. Anyone can view and edit it without signing in. Do not enter personal, customer or confidential work information. Use **Refresh board** to see other people's changes; stale edits return a conflict rather than overwriting newer work.
 
-Live create/edit/move, stale-version conflicts and identical record persistence across a full app restart were verified. The temporary verification record was removed only after checking it had no intervening edits. Brave reload shows five cards and **MongoDB · local development access**.
+The hosted mode requires `BANYAN_ACCESS=public-demo`, `BANYAN_STORAGE=mongodb`, an exact HTTPS `BANYAN_PUBLIC_ORIGIN`, and a server-only `MONGODB_URI`. It uses the separate `cards_public_demo` collection in `banyan_workflow`; the original local board remains in `cards`. Public activity is labelled `public-demo-visitor`, not an authenticated identity.
 
-This remains a local development application. The API is disabled in production, even if its environment variables are set. It is not an authenticated team service.
+A shared MongoDB limiter permits 30 write attempts per minute and 500 per UTC day across all visitors. A best-effort capacity check refuses creation once 200 cards exist (simultaneous creates can slightly exceed this). Edits remain available within the write limits. These controls bound demo writes; they are not authentication or comprehensive denial-of-service protection. Demo data is disposable and has no guaranteed retention period.
+
+Vercel production secrets are configured separately from the ignored local `.env.local`. The user authorized reuse of the app's existing database credential; collection separation is enforced by application code, while the credential has database-wide access. Preview deployments do not receive the production credential. `.vercelignore` excludes local secrets, generated files and QA screenshots from uploads.
+
+The project can be deployed directly using the Vercel CLI. GitHub auto-deployment is not configured because the Vercel GitHub integration is not connected. Source pushes alone do not release the site.
+
+## Local Atlas connection
+
+The original local environment uses an existing Atlas cluster, database `banyan_workflow`, collection `cards` and a dedicated application user with `readWrite` on that database and one-cluster scope. The local connection is stored in ignored `.env.local` with `0600` permissions. The public source contains no credentials or live database records.
+
+Local mode still requires loopback access and `BANYAN_LOCAL_API=1`. A production API without explicit public-demo configuration remains disabled. Authenticated team use with private data is not implemented.
 
 ## Clone and run locally
 
@@ -71,11 +81,11 @@ Seeding is explicit, not a side effect of loading the page in MongoDB mode. Exis
 
 API routes: `GET/POST /api/boards/modernization/cards` and `PATCH /api/boards/modernization/cards/:id`. PATCH accepts a complete `card` or a `status`, with `expectedVersion`. The server validates field types, title and size limits, status, HTTP(S) links, unknown fields and body size. IDs and board boundaries are checked; server metadata cannot be supplied through card payloads. The client retains a new card's ID on uncertain write retries and reports duplicate creation rather than silently creating another item.
 
-## Local access boundary / next authentication step
+## Access boundaries and future authentication
 
-The API requires explicit `BANYAN_LOCAL_API=1`, a non-production process and a loopback host. Writes require same-origin JSON requests; cross-site requests and unexpected forwarded hosts are rejected. All supplied run scripts bind to `127.0.0.1`. These are development restrictions, **not user authentication**. Anyone able to access this local server has the same local-development identity.
+Local mode requires explicit `BANYAN_LOCAL_API=1`, a non-production process and a loopback host. Hosted demo mode permits only the configured HTTPS origin and always selects the separate demo collection. Writes require same-origin JSON requests; cross-site requests and unexpected forwarded hosts are rejected. These checks are not user authentication: the demo is intentionally public.
 
-Before team use: add a server-validated login session and a board-membership store keyed by board ID and authenticated user ID, with reader/editor roles. Enforce membership on every read/write, derive activity actors from the session, and replace the production deny gate only after authorization tests pass. Account/provider selection, OAuth grants, credential creation and deployment require separate approval. Do not treat a supplied board ID as proof of membership.
+Before using private team data, add server-validated login sessions and board membership/roles on every read and write, derive activity actors from authenticated identity, and test those boundaries. Account/provider selection, OAuth grants, new credentials and network changes remain separate decisions.
 
 ## Checks and files
 
@@ -96,4 +106,4 @@ npm run build
 - `tests/board.test.ts`: original model/legacy codec regressions (the UI no longer uses that codec).
 - `QA.md`: observed checks and live-Atlas limitations.
 
-Public source repository: https://github.com/oli-deacon/banyan-workflow. Publishing the source does not deploy the application or include local credentials or live database records. No public deployment, paid resources, real personal data, external integrations or agent harness has been created.
+Public source repository: https://github.com/oli-deacon/banyan-workflow. Publishing the source does not deploy the application or include local credentials or live database records. The public demo is authorized for synthetic testing. No real personal data or agent harness is included.
