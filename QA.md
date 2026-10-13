@@ -1,3 +1,7 @@
+## Compact board header — 13 October 2026
+
+Removed the promotional heading/subheading and reduced workspace-row spacing. Local mock browser checks at 1440×900 and 390×844 showed the compact header and no horizontal overflow. Lint and type checking passed.
+
 # Hosted public demo verification — 13 October 2026
 
 Live: https://banyan-workflow.vercel.app. Shared saved synthetic board with no login. Vercel production deployment `dpl_75gquXmyfNAYGdGf2ztfd8vHDD4a` is READY, serving application commit `df38875`.

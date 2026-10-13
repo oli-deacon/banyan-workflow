@@ -21,6 +21,8 @@ The source repository is https://github.com/oli-deacon/banyan-workflow. A clone 
 
 ## Approved and built
 
+The board uses a compact workspace-label/New card row. The promotional heading and subheading were removed on 13 October 2026 to bring the board higher on the page.
+
 Banyan is a clean work proof of concept inspired by the compact presentation of the Strava Insights Plan board. It captures configurable work context in editable cards, rather than training data. All supplied examples are synthetic modernization tasks; no personal Strava data or credentials were copied. Current field definitions and columns are fixed in code, not a configurable schema editor.
 
 The exact agreed columns, in order, are **To Do**, **In Progress**, **Ready for Review**, **Done**. Preserve these labels unless the user explicitly changes the decision.

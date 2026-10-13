@@ -110,7 +110,7 @@ main {
   justify-content: space-between;
   align-items: center;
   gap: 24px;
-  padding: 48px 0 36px;
+  padding: 24px 0 20px;
 }
 .eyebrow {
   font-size: 10px;
@@ -119,18 +119,8 @@ main {
   color: var(--muted);
   margin: 0 0 12px;
 }
-h1 {
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 400;
-  font-size: 38px;
-  letter-spacing: -1.2px;
-  line-height: 1.16;
-  margin: 0 0 12px;
-}
-.subtitle {
-  color: var(--muted);
+.workspace-heading .eyebrow {
   margin: 0;
-  font-size: 14px;
 }
 .primary {
   background: var(--green);
@@ -537,13 +527,9 @@ textarea::placeholder {
     font-size: 10px;
   }
   .workspace-heading {
-    padding: 30px 0;
-    align-items: start;
-    flex-direction: column;
-    gap: 20px;
-  }
-  h1 {
-    font-size: 32px;
+    padding: 20px 0;
+    flex-wrap: wrap;
+    gap: 12px;
   }
   .board-toolbar {
     align-items: start;

@@ -221,13 +221,7 @@ export default function Board() {
         </span>
       </header>
       <section className="workspace-heading">
-        <div>
-          <p className="eyebrow">WORKSPACE / MODERNIZATION</p>
-          <h1>Work, moving forward.</h1>
-          <p className="subtitle">
-            Give every piece of work a clear next step.
-          </p>
-        </div>
+        <h1 className="eyebrow">WORKSPACE / MODERNIZATION</h1>
         <button
           ref={newButton}
           className="primary"
