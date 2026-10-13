@@ -6,6 +6,7 @@ import {
   blankCard,
   FIELDS,
   STATUSES,
+  safeLink,
   validateCard,
   type Card,
   type Status,
@@ -79,6 +80,12 @@ export default function Board() {
   const [cards, setCards] = useState<WorkflowCard[]>([]);
   const [ready, setReady] = useState(false);
   const [notice, setNotice] = useState("");
+  const [undo, setUndo] = useState<{
+    id: string;
+    status: Status;
+    version: number;
+  } | null>(null);
+  const [settled, setSettled] = useState<string | null>(null);
   const [storageWarning, setStorageWarning] = useState("");
   const [editor, setEditor] = useState<WorkflowCard | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
@@ -95,6 +102,8 @@ export default function Board() {
     try {
       const data = await api();
       setCards(data.cards);
+      setNotice("");
+      setUndo(null);
       setMode(data.mode);
       setStorageWarning("");
       setReady(true);
@@ -155,16 +164,21 @@ export default function Board() {
           : [...current, saved],
       );
       setStorageWarning("");
-      setNotice(`${saved.title} saved on the server.`);
+      setUndo(null);
+      setNotice(
+        existing
+          ? `Changes saved to “${saved.title}”.`
+          : `“${saved.title}” created. You’re ready to begin.`,
+      );
     } finally {
       pending.current = false;
       setBusy(false);
     }
   }
-  async function move(id: string, status: Status) {
+  async function move(id: string, status: Status, undoVersion?: number) {
     if (pending.current) return;
     const card = cards.find((item) => item.id === id);
-    if (!card || card.status === status) return;
+    if (!card || (card.status === status && undoVersion === undefined)) return;
     const retainFocus =
       document.activeElement?.getAttribute("data-move-id") === id;
     pending.current = true;
@@ -172,15 +186,32 @@ export default function Board() {
     try {
       const data = await api(`${API}/${encodeURIComponent(id)}`, {
         method: "PATCH",
-        body: JSON.stringify({ status, expectedVersion: card.version }),
+        body: JSON.stringify({
+          status,
+          expectedVersion: undoVersion ?? card.version,
+        }),
       });
       setCards((current) =>
         current.map((item) => (item.id === id ? data.card : item)),
       );
       setStorageWarning("");
-      setNotice(`${card.title} moved to ${status}.`);
+      setUndo(
+        undoVersion === undefined
+          ? { id, status: card.status, version: data.card.version }
+          : null,
+      );
+      setSettled(id);
+      setNotice(
+        undoVersion === undefined
+          ? `“${card.title}” moved to ${status}.`
+          : `Move undone. “${card.title}” is back in ${status}.`,
+      );
     } catch (error) {
-      setStorageWarning((error as Error).message);
+      setNotice("");
+      setUndo(null);
+      setStorageWarning(
+        `${undoVersion === undefined ? "Move" : "Undo"} could not be completed. ${(error as Error).message}`,
+      );
     } finally {
       pending.current = false;
       setBusy(false);
@@ -194,6 +225,11 @@ export default function Board() {
         );
     }
   }
+  useEffect(() => {
+    if (!settled) return;
+    const timer = setTimeout(() => setSettled(null), 900);
+    return () => clearTimeout(timer);
+  }, [settled]);
   function open(card: WorkflowCard) {
     opener.current = document.activeElement as HTMLElement;
     setEditor({ ...card, id: card.id || crypto.randomUUID() });
@@ -217,11 +253,19 @@ export default function Board() {
           banyan<span className="brand-sub"> / workflow</span>
         </Link>
         <span className="local-tag">
-          <span aria-hidden="true">●</span> {mode === "public-demo" ? "Shared public demo" : "Personal workspace"}
+          <span aria-hidden="true">●</span>{" "}
+          {!ready && busy
+            ? "Connecting…"
+            : mode === "public-demo"
+              ? "Shared public demo"
+              : "Personal workspace"}
         </span>
       </header>
       <section className="workspace-heading">
-        <h1 className="eyebrow">WORKSPACE / MODERNIZATION</h1>
+        <div className="workspace-name">
+          <h1>Modernization</h1>
+          <span>{ready ? `${cards.length} cards` : "Loading…"}</span>
+        </div>
         <button
           ref={newButton}
           className="primary"
@@ -232,17 +276,16 @@ export default function Board() {
         </button>
       </section>
       <div className="board-toolbar">
-        <div className="board-title">
-          Board <span>{cards.length} cards</span>
-        </div>
         <p>
-          {mode === "public-demo"
-            ? "Shared demo · changes saved for everyone"
-            : mode === "mongodb"
-            ? "MongoDB · local development access"
-            : mode === "mock"
-              ? "MOCK MODE · memory only, resets on restart"
-              : "Server connection unavailable"}
+          {!ready && busy
+            ? "Connecting to your board…"
+            : mode === "public-demo"
+              ? "Shared demo · changes saved for everyone"
+              : mode === "mongodb"
+                ? "MongoDB · local development access"
+                : mode === "mock"
+                  ? "MOCK MODE · memory only, resets on restart"
+                  : "Server connection unavailable"}
         </p>
         <button disabled={busy} onClick={() => void refresh()}>
           {busy ? "Working…" : "Refresh board"}
@@ -250,8 +293,9 @@ export default function Board() {
       </div>
       {mode === "public-demo" && (
         <div className="warning">
-          <strong>Public demo — synthetic data only.</strong> Anyone can view and edit these cards.
-          Do not enter personal, customer or confidential work information. Use Refresh board to see others’ changes.
+          <strong>Public demo — synthetic data only.</strong> Anyone can view
+          and edit these cards. Do not enter personal, customer or confidential
+          work information. Use Refresh board to see others’ changes.
         </div>
       )}
       {storageWarning && (
@@ -259,8 +303,36 @@ export default function Board() {
           {storageWarning}
         </div>
       )}
-      <div className="sr-only" role="status" aria-live="polite">
-        {notice}
+      <div className={`toast ${notice && !editor ? "visible" : ""}`}>
+        <span role="status" aria-live="polite">
+          {notice && (
+            <>
+              <span className="success-check" aria-hidden="true">
+                ✓
+              </span>
+              {notice}
+            </>
+          )}
+        </span>
+        {notice && undo && (
+          <button
+            disabled={busy}
+            onClick={() => void move(undo.id, undo.status, undo.version)}
+          >
+            Undo
+          </button>
+        )}
+        {notice && (
+          <button
+            aria-label="Dismiss notification"
+            onClick={() => {
+              setNotice("");
+              setUndo(null);
+            }}
+          >
+            ✕
+          </button>
+        )}
       </div>
       {!ready ? (
         <p className="loading">
@@ -303,7 +375,9 @@ export default function Board() {
               >
                 <header className="column-heading">
                   <h2>
-                    <span className="status-dot" />
+                    <span className="status-dot" aria-hidden="true">
+                      {status === "Done" ? "✓" : ""}
+                    </span>
                     {status}
                   </h2>
                   <span className="count">{items.length}</span>
@@ -311,7 +385,7 @@ export default function Board() {
                 <div className="card-list">
                   {items.map((card) => (
                     <article
-                      className={`card ${dragging === card.id ? "dragging" : ""}`}
+                      className={`card ${dragging === card.id ? "dragging" : ""} ${settled === card.id ? "settled" : ""}`}
                       key={card.id}
                       draggable={!busy}
                       onDragStart={(event) => {
@@ -409,6 +483,9 @@ function CardEditor({
   onSave: (card: WorkflowCard) => Promise<void>;
 }) {
   const [draft, setDraft] = useState(initial);
+  const [editing, setEditing] = useState(!initial.version);
+  const [moreDetail, setMoreDetail] = useState(!!initial.version);
+  const editButton = useRef<HTMLButtonElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -423,14 +500,15 @@ function CardEditor({
   useEffect(() => {
     const node = dialog.current!;
     node.showModal();
-    title.current?.focus();
+    if (initial.version) editButton.current?.focus();
+    else title.current?.focus();
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = previous;
       node.close();
     };
-  }, []);
+  }, [initial.version]);
   function update(key: keyof Card, value: string) {
     setDraft((current) => ({ ...current, [key]: value }));
     setError("");
@@ -444,7 +522,7 @@ function CardEditor({
         if (event.key !== "Tab") return;
         const controls = Array.from(
           event.currentTarget.querySelectorAll<HTMLElement>(
-            "button, input, textarea, select, a[href], [tabindex]",
+            "button, input, textarea, select, summary, a[href], [tabindex]",
           ),
         ).filter(
           (element) =>
@@ -471,9 +549,11 @@ function CardEditor({
         noValidate
         onSubmit={async (event) => {
           event.preventDefault();
+          if (!editing) return;
           const invalid = validateCard(draft);
           if (invalid) {
             setError(invalid);
+            setMoreDetail(true);
             if (!draft.title.trim()) title.current?.focus();
             return;
           }
@@ -497,7 +577,11 @@ function CardEditor({
               {draft.sample ? "SAMPLE WORK ITEM" : "WORK ITEM"}
             </p>
             <h2 id="detail-heading">
-              {initial.version ? "Card details" : "New card"}
+              {initial.version
+                ? editing
+                  ? "Edit card"
+                  : initial.title
+                : "New card"}
             </h2>
           </div>
           <div className="panel-actions">
@@ -522,88 +606,169 @@ function CardEditor({
         </header>
         <fieldset disabled={saving} className="detail-body">
           {publicDemo && (
-            <p className="warning">Synthetic data only. This card and its edits are visible to everyone.</p>
+            <p className="warning">
+              Synthetic data only. This card and its edits are visible to
+              everyone.
+            </p>
           )}
-          <div className="detail-intro">
-            <label>
-              Title <span className="required">Required</span>
-              <input
-                ref={title}
-                value={draft.title}
-                onChange={(event) => update("title", event.target.value)}
-                maxLength={160}
-                required
-                aria-invalid={!!error && !draft.title.trim()}
-                placeholder="What needs to move forward?"
-              />
-            </label>
-            <label>
-              Summary
-              <textarea
-                rows={2}
-                maxLength={400}
-                value={draft.summary}
-                onChange={(event) => update("summary", event.target.value)}
-                placeholder="A short description for the board."
-              />
-            </label>
-            <label className="status-field">
-              Status
-              <select
-                value={draft.status}
-                onChange={(event) => update("status", event.target.value)}
+          {!editing ? (
+            <div className="card-reading">
+              <span
+                className={`status-badge tone-${STATUSES.indexOf(initial.status)}`}
               >
-                {STATUSES.map((status) => (
-                  <option key={status}>{status}</option>
+                <span className="status-dot" aria-hidden="true">
+                  {initial.status === "Done" ? "✓" : ""}
+                </span>
+                {initial.status}
+              </span>
+              {initial.summary && (
+                <p className="reading-summary">{initial.summary}</p>
+              )}
+              {(
+                [
+                  "objective",
+                  "acceptance",
+                  "context",
+                  "references",
+                  "constraints",
+                  "progress",
+                  "outputs",
+                ] as const
+              ).map(
+                (key) =>
+                  initial[key].trim() && (
+                    <section
+                      key={key}
+                      className={`reading-section ${key === "objective" || key === "acceptance" ? "purpose-section" : ""}`}
+                    >
+                      <h3>
+                        {detailFields.find(([field]) => field === key)![1]}
+                      </h3>
+                      {key === "references" ? (
+                        initial.references
+                          .split("\n")
+                          .filter((link) => safeLink(link.trim()))
+                          .map((link, index) => (
+                            <a
+                              className="reference-link"
+                              key={index}
+                              href={link.trim()}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {link.trim()} ↗
+                            </a>
+                          ))
+                      ) : (
+                        <p>{initial[key]}</p>
+                      )}
+                    </section>
+                  ),
+              )}
+              {!detailFields.some(([key]) => initial[key].trim()) && (
+                <p className="reading-empty">
+                  A starting point is enough. Use Edit card to add an objective,
+                  context or a next step when you’re ready.
+                </p>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="detail-intro">
+                <label>
+                  Title <span className="required">Required</span>
+                  <input
+                    ref={title}
+                    value={draft.title}
+                    onChange={(event) => update("title", event.target.value)}
+                    maxLength={160}
+                    required
+                    aria-invalid={!!error && !draft.title.trim()}
+                    placeholder="What needs to move forward?"
+                  />
+                </label>
+                <label>
+                  Summary
+                  <textarea
+                    rows={2}
+                    maxLength={400}
+                    value={draft.summary}
+                    onChange={(event) => update("summary", event.target.value)}
+                    placeholder="A short description for the board."
+                  />
+                </label>
+                <label className="status-field">
+                  Status
+                  <select
+                    value={draft.status}
+                    onChange={(event) => update("status", event.target.value)}
+                  >
+                    {STATUSES.map((status) => (
+                      <option key={status}>{status}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <button
+                className="detail-toggle"
+                type="button"
+                aria-expanded={moreDetail}
+                aria-controls="additional-detail"
+                onClick={() => setMoreDetail(!moreDetail)}
+              >
+                {moreDetail ? "− Hide additional detail" : "+ Add more detail"}
+                <span>Purpose, context and progress · optional</span>
+              </button>
+              <div id="additional-detail" hidden={!moreDetail}>
+                {(
+                  [
+                    ["Purpose", ["objective", "acceptance"]],
+                    ["Context", ["context", "references", "constraints"]],
+                    ["Progress", ["progress", "outputs"]],
+                  ] as const
+                ).map(([group, keys]) => (
+                  <section className="field-group" key={group}>
+                    <h3>{group}</h3>
+                    <div className="detail-grid">
+                      {keys.map((key) => {
+                        const [, label, placeholder] = detailFields.find(
+                          ([field]) => field === key,
+                        )!;
+                        return (
+                          <label key={key}>
+                            {label}
+                            <textarea
+                              rows={key === "references" ? 2 : 3}
+                              maxLength={20000}
+                              value={draft[key]}
+                              onChange={(event) =>
+                                update(key, event.target.value)
+                              }
+                              placeholder={placeholder}
+                            />
+                            {key === "references" && (
+                              <span className="field-hint">
+                                One full http:// or https:// URL per line.
+                              </span>
+                            )}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </section>
                 ))}
-              </select>
-            </label>
-          </div>
-          <div className="detail-grid">
-            {detailFields.map(([key, label, placeholder]) => (
-              <label key={key}>
-                {label}
-                <textarea
-                  rows={key === "references" ? 2 : 3}
-                  maxLength={20000}
-                  value={draft[key]}
-                  onChange={(event) => update(key, event.target.value)}
-                  placeholder={placeholder}
-                />
-                {key === "references" && (
-                  <span className="field-hint">
-                    One full http:// or https:// URL per line. Links open in a
-                    new tab.
-                  </span>
-                )}
-              </label>
-            ))}
-          </div>
-          {draft.references
-            .split("\n")
-            .filter((link) => {
-              try {
-                return ["https:", "http:"].includes(
-                  new URL(link.trim()).protocol,
-                );
-              } catch {
-                return false;
-              }
-            })
-            .map((link, index) => (
-              <a
-                className="reference-link"
-                key={index}
-                href={link.trim()}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {link.trim()} ↗
-              </a>
-            ))}
+              </div>
+            </>
+          )}
           {initial.activity && (
-            <section className="activity">
-              <h3>Activity history</h3>
+            <details className="activity">
+              <summary>
+                Activity history{" "}
+                <span>
+                  {initial.activity.length}{" "}
+                  {initial.activity.length === 1 ? "event" : "events"}
+                </span>
+              </summary>
               <p>
                 Latest {initial.activity.length} events · current version{" "}
                 {initial.version}
@@ -622,7 +787,7 @@ function CardEditor({
                   </li>
                 ))}
               </ol>
-            </section>
+            </details>
           )}
         </fieldset>
         <footer className="detail-footer">
@@ -632,18 +797,42 @@ function CardEditor({
             </p>
           )}
           <span className="save-hint">
-            {dirty ? "Unsaved changes" : "Changes save to the server"}
+            {editing
+              ? dirty
+                ? "Unsaved changes"
+                : "Save when you’re ready"
+              : "Saved to the board"}
           </span>
           <button type="button" disabled={saving} onClick={requestClose}>
-            Cancel
+            {editing ? "Cancel" : "Close"}
           </button>
-          <button className="primary" type="submit" disabled={saving}>
-            {saving
-              ? "Saving…"
-              : initial.version
-                ? "Save changes"
-                : "Create card"}
-          </button>
+          {!editing ? (
+            <button
+              key="edit"
+              ref={editButton}
+              className="primary"
+              type="button"
+              onClick={() => {
+                setEditing(true);
+                requestAnimationFrame(() => title.current?.focus());
+              }}
+            >
+              Edit card
+            </button>
+          ) : (
+            <button
+              key="save"
+              className="primary"
+              type="submit"
+              disabled={saving}
+            >
+              {saving
+                ? "Saving…"
+                : initial.version
+                  ? "Save changes"
+                  : "Create card"}
+            </button>
+          )}
         </footer>
       </form>
     </dialog>

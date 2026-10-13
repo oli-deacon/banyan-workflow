@@ -1,3 +1,13 @@
+## First-priority experience update — 13 October 2026
+
+- Reading-first cards show the actual title, status, summary, objective and acceptance criteria before supporting detail; empty sections are hidden. Editing is explicit, and new-card detail fields are optional disclosures grouped by Purpose, Context and Progress.
+- Visible create/save/move feedback, version-checked move Undo, quiet board columns, warmer typography and restrained move/drop feedback with reduced-motion support.
+- Local mock browser verification: create with optional detail, open readable brief, edit/save, move to Done and Undo; a concurrent API edit rejects stale Undo. Another concurrent edit rejects stale Save while retaining the draft. Discard confirmation works.
+- Found and fixed a reading-to-edit button reconciliation issue that could submit the form on the same click. Retested the explicit Edit → change summary → Save flow successfully.
+- Verified mobile 390×844 board and reading panel, desktop 1440×900 board and expanded reading view without horizontal overflow. Keyboard Tab from the final action wraps to the first dialog control; opening Edit focuses Title. No browser console errors in the final check.
+- All 22 existing regression tests passed. Final lint, typecheck and production build passed.
+- Test writes used only the explicit memory mock. Public and local Atlas card data were not changed. Safari, Firefox, physical touch and a screen-reader audit remain untested.
+
 ## Compact board header — 13 October 2026
 
 Removed the promotional heading/subheading and reduced workspace-row spacing. Local mock browser checks at 1440×900 and 390×844 showed the compact header and no horizontal overflow. Lint and type checking passed.

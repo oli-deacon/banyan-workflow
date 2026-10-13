@@ -21,15 +21,16 @@ The source repository is https://github.com/oli-deacon/banyan-workflow. A clone 
 
 ## Approved and built
 
-The board uses a compact workspace-label/New card row. The promotional heading and subheading were removed on 13 October 2026 to bring the board higher on the page.
+The board uses a compact Modernization title/card-count/New card row with warm paper, serif workspace/detail titles and quiet columns. The promotional heading and subheading were removed on 13 October 2026 to bring the board higher on the page.
 
 Banyan is a clean work proof of concept inspired by the compact presentation of the Strava Insights Plan board. It captures configurable work context in editable cards, rather than training data. All supplied examples are synthetic modernization tasks; no personal Strava data or credentials were copied. Current field definitions and columns are fixed in code, not a configurable schema editor.
 
 The exact agreed columns, in order, are **To Do**, **In Progress**, **Ready for Review**, **Done**. Preserve these labels unless the user explicitly changes the decision.
 
-- Compact cards show a title and short summary. Create from the toolbar or a column; click a card to edit.
-- Detail fields: objective, input context, reference links, constraints, acceptance criteria, progress/blockers and outputs. The modal side panel expands to fullscreen and shows activity history.
+- Compact cards show a title and short summary. Create from the toolbar or a column; click a card to read its brief, then choose Edit card.
+- Detail fields: objective, input context, reference links, constraints, acceptance criteria, progress/blockers and outputs. The modal side panel expands to fullscreen, emphasizes objective and acceptance criteria, hides empty reading sections and keeps activity in a disclosure. New cards start with title, summary and status; optional fields are grouped under Purpose, Context and Progress.
 - Desktop native drag/drop and a keyboard/touch Move control change workflow status. **Moving a card does not start an agent.** There is no execution state, agent harness or integration.
+- Visible success notifications confirm Create/Save and moves. Move notifications offer Undo using the exact version returned by the move; a newer edit rejects Undo. Drag/drop targets and successful moves have restrained feedback with reduced-motion support.
 - Explicit Create/Save sends an API write. Request locks prevent repeated in-flight submissions. Close/Cancel/Escape protect changed drafts; modal focus is contained and restored.
 - A failed write or stale edit keeps the draft open with an error. Drafts do not survive page reload. There is no automatic merge: retain/copy needed edits, then close and refresh before editing the latest version. Uncertain write outcomes must be checked before retrying.
 
