@@ -464,9 +464,7 @@ export default function Board() {
                         </span>
                       </button>
                       <footer className="card-footer">
-                        <span className="sample-label">
-                          {card.sample ? "SAMPLE" : "WORK ITEM"}
-                        </span>
+                        {!card.sample && <span className="sample-label">WORK ITEM</span>}
                         <label className="move-control">
                           <span>Move</span>
                           <select

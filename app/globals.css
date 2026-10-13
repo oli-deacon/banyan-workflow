@@ -251,6 +251,7 @@ main {
   color: #6d7e6d;
 }
 .move-control {
+  margin-left: auto;
   position: relative;
   display: flex;
   align-items: center;
