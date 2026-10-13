@@ -295,9 +295,23 @@ test("real mock API loads card details and persists a create/edit across reload"
   await page.getByRole("button", { name: "New card" }).click();
   const title = `Synthetic browser regression ${Date.now()}`;
   await page.getByLabel("Title Required").fill(title);
+  await page.getByRole("button", { name: /Add more detail/ }).click();
+  const stop = page.getByRole("textbox", {
+    name: "Stop Condition",
+    exact: true,
+  });
+  await expect(stop).toHaveAttribute("aria-describedby", "stop-condition-hint");
+  await expect(page.locator("#stop-condition-hint")).toContainText(
+    "pause and request human input",
+  );
+  await stop.fill("Pause if the interface changes.");
   await page.getByRole("button", { name: "Create card", exact: true }).click();
   await page.getByRole("button", { name: new RegExp(title) }).click();
+  await expect(
+    page.getByText("Pause if the interface changes.", { exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Edit card", exact: true }).click();
+  await stop.fill("Pause if test evidence is missing.\nAsk for human review.");
   await page
     .getByLabel("Summary", { exact: true })
     .fill("Saved by the real mock API");
@@ -308,9 +322,23 @@ test("real mock API loads card details and persists a create/edit across reload"
     .getByRole("button", { name: `${title} Saved by the real mock API` })
     .click();
   await expect(
-    page.getByText("Saved by the real mock API", { exact: true }),
+    page
+      .getByRole("dialog")
+      .getByText("Saved by the real mock API", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Stop Condition" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Pause if test evidence is missing.\nAsk for human review.",
+      { exact: true },
+    ),
   ).toBeVisible();
   await page.getByText("Activity history", { exact: false }).click();
+  await expect(
+    page.getByText("Updated summary and stop condition", { exact: true }),
+  ).toBeVisible();
   await expect(page.getByText("Revision 2", { exact: false })).toHaveCount(1);
 });
 
@@ -330,3 +358,71 @@ test("a successful background read does not erase an uncertain move outcome", as
   await expect(warning).toContainText("earlier write may have succeeded");
   expect(state.card.version).toBe(1);
 });
+
+test("legacy details without stop condition remain readable and editable", async ({
+  page,
+}) => {
+  const legacy = newRecord(
+    { ...blankCard("To Do", "legacy-test"), title: "Legacy sample" },
+    "modernization",
+  );
+  delete (legacy as Partial<typeof legacy>).stopCondition;
+  await page.route(`**${API}**`, async (route) => {
+    if (new URL(route.request().url()).pathname === API)
+      return route.fulfill({
+        json: { cards: [summarizeCard(legacy)], mode: "mock" },
+      });
+    return route.fulfill({ json: { card: legacy } });
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: /^Legacy sample/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Stop Condition" }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Edit card", exact: true }).click();
+  await expect(
+    page.getByRole("textbox", { name: "Stop Condition", exact: true }),
+  ).toHaveValue("");
+});
+
+for (const width of [390, 1440]) {
+  test(`sample stop condition reading and editing fit at ${width}px`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/");
+    await page
+      .getByRole("button", {
+        name: /Map the legacy service boundaries Find the seams/,
+      })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Stop Condition" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        /Pause and ask for human input if dependencies are ambiguous/,
+      ),
+    ).toBeVisible();
+    const dialog = page.getByRole("dialog");
+    expect(
+      await dialog.evaluate((node) => node.scrollWidth <= node.clientWidth),
+    ).toBe(true);
+    await page.getByRole("button", { name: "Edit card", exact: true }).click();
+    const stop = page.getByRole("textbox", {
+      name: "Stop Condition",
+      exact: true,
+    });
+    await stop.scrollIntoViewIfNeeded();
+    await expect(stop).toBeVisible();
+    await expect(stop).toHaveValue(
+      /Pause and ask for human input if dependencies are ambiguous/,
+    );
+    expect(
+      await dialog.evaluate((node) => node.scrollWidth <= node.clientWidth),
+    ).toBe(true);
+    await page.screenshot({
+      path: testInfo.outputPath(`stop-condition-${width}.png`),
+    });
+  });
+}

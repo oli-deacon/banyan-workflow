@@ -2,6 +2,14 @@
 
 **Snapshot: 13 October 2026, Melbourne (Australia/Melbourne).** This records agreed decisions and verified state at that date, not a promise that a preview process is still running.
 
+## Stop Condition change prepared — 13 October 2026
+
+Optional `stopCondition` is included in shared fields, blank cards, create/edit Context, reading view, activity labels, API validation and MongoDB records. It describes when to pause for human input; it does not implement agent execution. Legacy missing fields normalize to blank without a read-time write; older PATCH clients omitting the field preserve saved values. Explicit empty strings clear it. The detail limit remains 20,000 characters.
+
+The five source samples now contain task-specific conditions. `scripts/backfill-stop-conditions.ts` is a dry-run-first maintenance command with an explicit collection target and no upsert. It only fills missing/empty values on known sample IDs with matching source task context, and atomically checks version/context/missing field before writing the field and revision history. Changed tasks require review. See README for commands and outcomes.
+
+No live records were read or updated during this change: the demo API is inaccessible from this environment (HTTP 403), and no approved MongoDB configuration is present. Publication and live sample application remain separate pending steps; do not merge to main or apply the backfill without publication approval. Current safeguards and collection separation are unchanged. `vercel.json` disables automatic deployments only for `feat/card-stop-condition`, so publishing this draft branch does not request a preview deployment. Main remains enabled; this branch-specific rule can be removed after publication approval.
+
 ## Public demo update — 13 October 2026
 
 The user authorized a Vercel-hosted, shared saved board with no login, exclusively for synthetic data. The live demo is https://banyan-workflow.vercel.app, verified READY with browser create/edit/move, fresh-tab persistence, live conflict checks and unchanged local-board checksum. All 22 tests, lint, type checking and production build passed; see QA.md for details. The Vercel project is `banyan-workflow`. GitHub integration is connected to `oli-deacon/banyan-workflow`, with `main` as the production branch and automatic domain assignment enabled. Pushes to `main` now trigger production deployment. Fork protection is enabled; preview environments have no production database credential.
