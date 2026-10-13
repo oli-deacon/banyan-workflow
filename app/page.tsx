@@ -339,17 +339,17 @@ export default function Board() {
       </section>
       <div className="board-toolbar">
         <div>
-          <p>
-            {!ready && busy
-              ? "Connecting to your board…"
-              : mode === "public-demo"
-                ? "Shared demo · changes saved for everyone"
+          {mode !== "public-demo" && (
+            <p>
+              {!ready && busy
+                ? "Connecting to your board…"
                 : mode === "mongodb"
                   ? "MongoDB · local development access"
                   : mode === "mock"
                     ? "MOCK MODE · memory only, resets on restart"
                     : "Server connection unavailable"}
-          </p>
+            </p>
+          )}
           {ready && (
             <p
               className={`sync-status ${syncWarning ? "sync-paused" : ""}`}
