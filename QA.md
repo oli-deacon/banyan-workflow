@@ -1,3 +1,7 @@
+## Compact public-demo notice — 13 October 2026
+
+Replaced the board’s padded warning banner with a compact text line. Public editing, synthetic-only use and the prohibition on personal/customer/confidential information remain explicit. Editor reminders and actual error alerts retain their existing styling.
+
 ## Footer and refresh cadence — 13 October 2026
 
 Removed the workspace footer and its unused styles. Background polling now runs every five minutes; focus, visibility-return, reconnect and manual refresh remain. A separate one-minute display clock keeps relative timestamps current without making API requests.

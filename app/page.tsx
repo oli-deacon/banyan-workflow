@@ -365,11 +365,10 @@ export default function Board() {
         </button>
       </div>
       {mode === "public-demo" && (
-        <div className="warning">
-          <strong>Public demo — synthetic data only.</strong> Anyone can view
-          and edit these cards. Do not enter personal, customer or confidential
-          work information. Changes appear automatically.
-        </div>
+        <p className="demo-notice">
+          <strong>Public demo · Synthetic data only.</strong> Anyone can view and
+          edit. No personal, customer or confidential information.
+        </p>
       )}
       {storageWarning && (
         <div className="warning" role="alert">

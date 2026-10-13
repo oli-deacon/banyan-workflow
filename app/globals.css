@@ -314,6 +314,16 @@ main {
   padding: 80px;
   text-align: center;
 }
+.demo-notice {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.demo-notice strong {
+  color: #68542e;
+  font-weight: 600;
+}
 .warning {
   padding: 14px;
   background: #fff1d7;
