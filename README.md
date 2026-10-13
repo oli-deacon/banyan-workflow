@@ -8,7 +8,7 @@ A Next.js / React / TypeScript workflow board with a server-side API and the off
 
 Live demo: https://banyan-workflow.vercel.app. Browser create/edit/move and shared persistence were verified on 13 October 2026; details are recorded in `QA.md`.
 
-This is a shared, saved board for **synthetic data only**. Anyone can view and edit it without signing in. Do not enter personal, customer or confidential work information. Use **Refresh board** to see other people's changes; stale edits return a conflict rather than overwriting newer work.
+This is a shared, saved board for **synthetic data only**. Anyone can view and edit it without signing in. Do not enter personal, customer or confidential work information. The board checks for updates every 15 seconds while visible and when you return to the tab. **Refresh board** remains available. Open drafts stay untouched; a newer revision shows a notice with an explicit **Load latest card** action. Stale saves cannot overwrite newer work.
 
 The hosted mode requires `BANYAN_ACCESS=public-demo`, `BANYAN_STORAGE=mongodb`, an exact HTTPS `BANYAN_PUBLIC_ORIGIN`, and a server-only `MONGODB_URI`. It uses the separate `cards_public_demo` collection in `banyan_workflow`; the original local board remains in `cards`. Public activity is labelled `public-demo-visitor`, not an authenticated identity.
 
@@ -54,7 +54,7 @@ npm run dev:mock -- --port 3101
 
 Open http://127.0.0.1:3101. The UI explicitly displays **MOCK MODE · memory only, resets on restart**. Mock state lives in the server process, survives browser reloads and is shared between local browser tabs. It resets on server restart. It never claims to have saved to Atlas. The server binds to loopback; do not expose it through a public tunnel or proxy.
 
-The original browser localStorage value is neither read nor written by the new UI. It is not imported automatically. Drafts stay in the open editor after a failed write or version conflict; they are not persisted across a page reload. Copy a conflicted draft before closing and refreshing the board.
+The original browser localStorage value is neither read nor written by the new UI. It is not imported automatically. Drafts stay in the open editor after a failed write or version conflict; they are not persisted across a page reload. Copy a conflicted draft before loading the latest card or closing and refreshing the board. Activity uses plain-language actions, relative timestamps and honest anonymous visitor labels; exact times and revision numbers remain available under Details.
 
 ## Connection configuration and seeding
 

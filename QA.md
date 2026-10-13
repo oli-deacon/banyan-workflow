@@ -1,3 +1,13 @@
+## Shared updates, activity and polish — 13 October 2026
+
+- Added visible-tab polling every 15 seconds and focus/visibility/online refresh. Read epochs discard in-flight reads that overlap newer writes; polling skips pending writes and drag operations. Failed background checks retain the board/draft and show a retry notice.
+- Open-card snapshots and drafts are preserved. Newer versions show a notice and disable stale Save. Loading the latest dirty card now uses an inline two-step discard confirmation, with Keep my draft available.
+- Activity uses readable action/field names, honest anonymous actor labels, relative times, optional exact timestamps/revisions and a latest-500 retention note when applicable.
+- Added an original canopy motif in status-specific empty columns and the footer, completion copy, and reduced-motion-aware panel/toast transitions. No mobile-layout changes.
+- All 25 tests, lint, typecheck and production build passed. New regressions cover combined edit/move descriptions, actor/seed labels, relative-time boundaries and clock skew.
+- Browser mock check confirmed a move in a second tab appears as a newer-version notice in an open editor, leaves its unsaved summary intact, and disables stale Save.
+- Follow-up laptop browser checks verified inline Keep my draft and explicit discard/load, newer status/history on load, readable activity entries and the original canopy empty state. Stopping the local mock server left the board visible and showed Updates paused. Automatic recovery after a failed poll is implemented; a full outage/recovery browser check was inconclusive because the development server’s restart triggered page reload, and the temporary proxy did not hydrate. All test mutations were confined to the memory mock; no Atlas records were changed.
+
 ## First-priority experience update — 13 October 2026
 
 - Reading-first cards show the actual title, status, summary, objective and acceptance criteria before supporting detail; empty sections are hidden. Editing is explicit, and new-card detail fields are optional disclosures grouped by Purpose, Context and Progress.

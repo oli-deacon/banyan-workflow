@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { activityText, actorText, relativeTime } from "@/lib/activity";
 import { useEffect, useRef, useState } from "react";
 import {
   blankCard,
@@ -95,9 +96,63 @@ export default function Board() {
   const [mode, setMode] = useState("unavailable");
   const [busy, setBusy] = useState(true);
   const pending = useRef(false);
+  const readEpoch = useRef(0);
+  const [checkedAt, setCheckedAt] = useState<number | null>(null);
+  const [syncWarning, setSyncWarning] = useState("");
+  const [clock, setClock] = useState(0);
+  useEffect(() => {
+    let active = true;
+    let reading = false;
+    async function sync() {
+      if (
+        document.visibilityState !== "visible" ||
+        pending.current ||
+        reading ||
+        dragging
+      )
+        return;
+      reading = true;
+      const epoch = readEpoch.current;
+      try {
+        const data = await api();
+        if (!active || pending.current || epoch !== readEpoch.current) return;
+        setCards(data.cards);
+        if (!ready) setStorageWarning("");
+        setMode(data.mode);
+        setReady(true);
+        setCheckedAt(Date.now());
+        setSyncWarning("");
+      } catch {
+        if (active && epoch === readEpoch.current)
+          setSyncWarning(
+            "Updates paused. We’ll retry automatically; your open draft is safe.",
+          );
+      } finally {
+        reading = false;
+      }
+    }
+    const tick = setInterval(() => {
+      setClock(Date.now());
+      void sync();
+    }, 15000);
+    const resume = () => {
+      void sync();
+    };
+    window.addEventListener("focus", resume);
+    document.addEventListener("visibilitychange", resume);
+    window.addEventListener("online", resume);
+    return () => {
+      active = false;
+      clearInterval(tick);
+      window.removeEventListener("focus", resume);
+      document.removeEventListener("visibilitychange", resume);
+      window.removeEventListener("online", resume);
+    };
+  }, [dragging, ready]);
   async function refresh() {
     if (pending.current) return;
     pending.current = true;
+    readEpoch.current += 1;
     setBusy(true);
     try {
       const data = await api();
@@ -107,6 +162,8 @@ export default function Board() {
       setMode(data.mode);
       setStorageWarning("");
       setReady(true);
+      setCheckedAt(Date.now());
+      setSyncWarning("");
     } catch (error) {
       setStorageWarning((error as Error).message);
     } finally {
@@ -117,12 +174,14 @@ export default function Board() {
   useEffect(() => {
     let active = true;
     pending.current = true;
+    readEpoch.current += 1;
     api()
       .then((data) => {
         if (active) {
           setCards(data.cards);
           setMode(data.mode);
           setReady(true);
+          setCheckedAt(Date.now());
         }
       })
       .catch((error) => {
@@ -144,6 +203,7 @@ export default function Board() {
         "Another request is still running. Please try again in a moment.",
       );
     pending.current = true;
+    readEpoch.current += 1;
     setBusy(true);
     try {
       const existing = card.version !== undefined;
@@ -182,6 +242,7 @@ export default function Board() {
     const retainFocus =
       document.activeElement?.getAttribute("data-move-id") === id;
     pending.current = true;
+    readEpoch.current += 1;
     setBusy(true);
     try {
       const data = await api(`${API}/${encodeURIComponent(id)}`, {
@@ -203,7 +264,9 @@ export default function Board() {
       setSettled(id);
       setNotice(
         undoVersion === undefined
-          ? `“${card.title}” moved to ${status}.`
+          ? status === "Done"
+            ? `“${card.title}” is done. A little more clarity.`
+            : `“${card.title}” moved to ${status}.`
           : `Move undone. “${card.title}” is back in ${status}.`,
       );
     } catch (error) {
@@ -276,17 +339,28 @@ export default function Board() {
         </button>
       </section>
       <div className="board-toolbar">
-        <p>
-          {!ready && busy
-            ? "Connecting to your board…"
-            : mode === "public-demo"
-              ? "Shared demo · changes saved for everyone"
-              : mode === "mongodb"
-                ? "MongoDB · local development access"
-                : mode === "mock"
-                  ? "MOCK MODE · memory only, resets on restart"
-                  : "Server connection unavailable"}
-        </p>
+        <div>
+          <p>
+            {!ready && busy
+              ? "Connecting to your board…"
+              : mode === "public-demo"
+                ? "Shared demo · changes saved for everyone"
+                : mode === "mongodb"
+                  ? "MongoDB · local development access"
+                  : mode === "mock"
+                    ? "MOCK MODE · memory only, resets on restart"
+                    : "Server connection unavailable"}
+          </p>
+          {ready && (
+            <p
+              className={`sync-status ${syncWarning ? "sync-paused" : ""}`}
+              role="status"
+            >
+              {syncWarning ||
+                `Updates every 15 seconds · checked ${checkedAt ? relativeTime(checkedAt, Math.max(clock, checkedAt || 0)).toLowerCase() : "just now"}`}
+            </p>
+          )}
+        </div>
         <button disabled={busy} onClick={() => void refresh()}>
           {busy ? "Working…" : "Refresh board"}
         </button>
@@ -295,7 +369,7 @@ export default function Board() {
         <div className="warning">
           <strong>Public demo — synthetic data only.</strong> Anyone can view
           and edit these cards. Do not enter personal, customer or confidential
-          work information. Use Refresh board to see others’ changes.
+          work information. Changes appear automatically.
         </div>
       )}
       {storageWarning && (
@@ -431,11 +505,29 @@ export default function Board() {
                   ))}
                 </div>
                 {items.length === 0 && (
-                  <p className="empty">
-                    Nothing here yet.
-                    <br />
-                    Move a card here or create one.
-                  </p>
+                  <div className="empty">
+                    <Canopy />
+                    <strong>
+                      {
+                        [
+                          "Room for a new idea.",
+                          "A little breathing room.",
+                          "Ready when you are.",
+                          "Good work will land here.",
+                        ][index]
+                      }
+                    </strong>
+                    <p>
+                      {
+                        [
+                          "Capture a next step, however small.",
+                          "Move a card here when work begins.",
+                          "Bring finished work here for a second look.",
+                          "Move reviewed, completed work here.",
+                        ][index]
+                      }
+                    </p>
+                  </div>
                 )}
                 <button
                   disabled={busy}
@@ -450,7 +542,10 @@ export default function Board() {
         </div>
       )}
       <footer className="workspace-footer">
-        <span>Built for a little more clarity.</span>
+        <span className="footer-signature">
+          <Canopy />
+          Built for a little more clarity.
+        </span>
         <span>
           Example cards are synthetic sample data. No agents or integrations run
           here.
@@ -460,6 +555,8 @@ export default function Board() {
         <CardEditor
           publicDemo={mode === "public-demo"}
           initial={editor}
+          latest={cards.find((card) => card.id === editor.id)}
+          now={Math.max(clock, checkedAt || 0)}
           onClose={close}
           onSave={async (card) => {
             await save(card);
@@ -473,16 +570,24 @@ export default function Board() {
 
 function CardEditor({
   publicDemo,
-  initial,
+  initial: opened,
+  latest,
+  now,
   onClose,
   onSave,
 }: {
   publicDemo: boolean;
   initial: WorkflowCard;
+  latest?: WorkflowCard;
+  now: number;
   onClose: () => void;
   onSave: (card: WorkflowCard) => Promise<void>;
 }) {
-  const [draft, setDraft] = useState(initial);
+  const [initial, setInitial] = useState(opened);
+  const [confirmLatest, setConfirmLatest] = useState(false);
+  const [draft, setDraft] = useState(opened);
+  const newer =
+    !!latest?.version && !!initial.version && latest.version > initial.version;
   const [editing, setEditing] = useState(!initial.version);
   const [moreDetail, setMoreDetail] = useState(!!initial.version);
   const editButton = useRef<HTMLButtonElement>(null);
@@ -549,7 +654,7 @@ function CardEditor({
         noValidate
         onSubmit={async (event) => {
           event.preventDefault();
-          if (!editing) return;
+          if (!editing || newer) return;
           const invalid = validateCard(draft);
           if (invalid) {
             setError(invalid);
@@ -605,6 +710,44 @@ function CardEditor({
           </div>
         </header>
         <fieldset disabled={saving} className="detail-body">
+          {newer && (
+            <div className="update-banner" role="status">
+              <strong>A newer version is available.</strong>
+              <p>
+                {editing
+                  ? "Your draft is untouched. Copy any changes you want to keep before loading the latest card."
+                  : "This card changed since you opened it."}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  if (dirty && !confirmLatest) {
+                    setConfirmLatest(true);
+                    return;
+                  }
+                  setConfirmLatest(false);
+                  setInitial(latest!);
+                  setDraft(latest!);
+                  setError("");
+                }}
+              >
+                {confirmLatest
+                  ? "Discard draft and load latest"
+                  : "Load latest card"}
+              </button>
+              {confirmLatest && (
+                <>
+                  <p role="alert">
+                    This will replace your unsaved changes. Copy anything you
+                    want to keep first.
+                  </p>
+                  <button type="button" onClick={() => setConfirmLatest(false)}>
+                    Keep my draft
+                  </button>
+                </>
+              )}
+            </div>
+          )}
           {publicDemo && (
             <p className="warning">
               Synthetic data only. This card and its edits are visible to
@@ -769,21 +912,44 @@ function CardEditor({
                   {initial.activity.length === 1 ? "event" : "events"}
                 </span>
               </summary>
-              <p>
-                Latest {initial.activity.length} events · current version{" "}
-                {initial.version}
+              <p className="activity-note">
+                {publicDemo
+                  ? "Visitors are anonymous; entries may be from different people."
+                  : "Changes saved to this card."}{" "}
+                {initial.activity.length === 500
+                  ? "Showing the latest 500 events."
+                  : ""}
               </p>
               <ol>
                 {[...initial.activity].reverse().map((event) => (
                   <li key={event.version}>
-                    <strong>
-                      v{event.version} · {event.action}
-                    </strong>{" "}
-                    · {new Date(event.at).toLocaleString()}
-                    <br />
-                    {event.actor}
-                    {event.from ? ` · ${event.from} → ${event.to}` : ""}
-                    {event.fields.length ? ` · ${event.fields.join(", ")}` : ""}
+                    <span className="activity-marker" aria-hidden="true">
+                      {event.to === "Done"
+                        ? "✓"
+                        : event.action === "created" ||
+                            event.action === "seeded"
+                          ? "+"
+                          : "↗"}
+                    </span>
+                    <div>
+                      <strong>{activityText(event)}</strong>
+                      <p>
+                        {actorText(event.actor)} ·{" "}
+                        <time
+                          dateTime={event.at}
+                          title={new Date(event.at).toLocaleString()}
+                        >
+                          {relativeTime(event.at, now)}
+                        </time>
+                      </p>
+                      <details className="event-details">
+                        <summary>Details</summary>
+                        <p>
+                          {new Date(event.at).toLocaleString()} · Revision{" "}
+                          {event.version}
+                        </p>
+                      </details>
+                    </div>
                   </li>
                 ))}
               </ol>
@@ -824,7 +990,7 @@ function CardEditor({
               key="save"
               className="primary"
               type="submit"
-              disabled={saving}
+              disabled={saving || newer}
             >
               {saving
                 ? "Saving…"
@@ -836,5 +1002,25 @@ function CardEditor({
         </footer>
       </form>
     </dialog>
+  );
+}
+
+function Canopy() {
+  return (
+    <svg className="canopy" viewBox="0 0 48 40" fill="none" aria-hidden="true">
+      <path
+        d="M24 36V18M24 29L12 20M24 24L36 14"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M23 20C9 23 4 15 7 8c9-3 18 1 16 12ZM25 16C23 5 32 1 41 5c1 9-5 14-16 11Z"
+        fill="currentColor"
+        fillOpacity=".16"
+        stroke="currentColor"
+        strokeWidth="1.2"
+      />
+    </svg>
   );
 }
