@@ -309,14 +309,7 @@ main {
   border-color: #5b855f;
   background: #e4ecdf;
 }
-.workspace-footer {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  color: #737e73;
-  font-size: 11px;
-  padding: 28px 0;
-}
+
 .loading {
   padding: 80px;
   text-align: center;
@@ -544,10 +537,7 @@ textarea::placeholder {
   .column {
     min-height: 180px;
   }
-  .workspace-footer {
-    flex-direction: column;
-    line-height: 1.6;
-  }
+
   .detail-header {
     padding: 20px 16px;
   }
@@ -963,15 +953,8 @@ fieldset.detail-body {
 .empty p {
   margin: 8px 0 0;
 }
-.footer-signature {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.footer-signature .canopy {
-  width: 26px;
-  height: 24px;
-}
+
+
 .activity > ol {
   list-style: none;
   padding: 0;

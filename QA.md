@@ -1,3 +1,7 @@
+## Footer and refresh cadence — 13 October 2026
+
+Removed the workspace footer and its unused styles. Background polling now runs every five minutes; focus, visibility-return, reconnect and manual refresh remain. A separate one-minute display clock keeps relative timestamps current without making API requests.
+
 ## Shared updates, activity and polish — 13 October 2026
 
 - Added visible-tab polling every 15 seconds and focus/visibility/online refresh. Read epochs discard in-flight reads that overlap newer writes; polling skips pending writes and drag operations. Failed background checks retain the board/draft and show a retry notice.

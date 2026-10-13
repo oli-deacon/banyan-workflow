@@ -8,7 +8,7 @@ A Next.js / React / TypeScript workflow board with a server-side API and the off
 
 Live demo: https://banyan-workflow.vercel.app. Browser create/edit/move and shared persistence were verified on 13 October 2026; details are recorded in `QA.md`.
 
-This is a shared, saved board for **synthetic data only**. Anyone can view and edit it without signing in. Do not enter personal, customer or confidential work information. The board checks for updates every 15 seconds while visible and when you return to the tab. **Refresh board** remains available. Open drafts stay untouched; a newer revision shows a notice with an explicit **Load latest card** action. Stale saves cannot overwrite newer work.
+This is a shared, saved board for **synthetic data only**. Anyone can view and edit it without signing in. Do not enter personal, customer or confidential work information. The board checks for updates every 5 minutes while visible and when you return to the tab. **Refresh board** remains available. Open drafts stay untouched; a newer revision shows a notice with an explicit **Load latest card** action. Stale saves cannot overwrite newer work.
 
 The hosted mode requires `BANYAN_ACCESS=public-demo`, `BANYAN_STORAGE=mongodb`, an exact HTTPS `BANYAN_PUBLIC_ORIGIN`, and a server-only `MONGODB_URI`. It uses the separate `cards_public_demo` collection in `banyan_workflow`; the original local board remains in `cards`. Public activity is labelled `public-demo-visitor`, not an authenticated identity.
 

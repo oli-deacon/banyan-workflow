@@ -131,10 +131,8 @@ export default function Board() {
         reading = false;
       }
     }
-    const tick = setInterval(() => {
-      setClock(Date.now());
-      void sync();
-    }, 15000);
+    const tick = setInterval(() => void sync(), 5 * 60 * 1000);
+    const clockTick = setInterval(() => setClock(Date.now()), 60 * 1000);
     const resume = () => {
       void sync();
     };
@@ -144,6 +142,7 @@ export default function Board() {
     return () => {
       active = false;
       clearInterval(tick);
+      clearInterval(clockTick);
       window.removeEventListener("focus", resume);
       document.removeEventListener("visibilitychange", resume);
       window.removeEventListener("online", resume);
@@ -357,7 +356,7 @@ export default function Board() {
               role="status"
             >
               {syncWarning ||
-                `Updates every 15 seconds · checked ${checkedAt ? relativeTime(checkedAt, Math.max(clock, checkedAt || 0)).toLowerCase() : "just now"}`}
+                `Updates every 5 minutes · checked ${checkedAt ? relativeTime(checkedAt, Math.max(clock, checkedAt || 0)).toLowerCase() : "just now"}`}
             </p>
           )}
         </div>
@@ -541,16 +540,6 @@ export default function Board() {
           })}
         </div>
       )}
-      <footer className="workspace-footer">
-        <span className="footer-signature">
-          <Canopy />
-          Built for a little more clarity.
-        </span>
-        <span>
-          Example cards are synthetic sample data. No agents or integrations run
-          here.
-        </span>
-      </footer>
       {editor && (
         <CardEditor
           publicDemo={mode === "public-demo"}
