@@ -51,8 +51,8 @@ test("public demo rejects unapproved origins, forwarded hosts, and other boards"
     { origin: "https://attacker.example" },
     { origin: "" },
     { host: "preview.example" },
-    { "x-forwarded-host": "attacker.example" },
-    { forwarded: "host=attacker.example" },
+    { host: "attacker.example", "x-forwarded-host": "demo.example" },
+    { host: "attacker.example", forwarded: "host=demo.example" },
     { "sec-fetch-site": "cross-site" },
   ];
   for (const headers of invalidHeaders) {
@@ -60,6 +60,11 @@ test("public demo rejects unapproved origins, forwarded hosts, and other boards"
   }
   assert.equal((await handle(request("GET"), "private-board", undefined, store)).status, 404);
   assert.equal((await store.list(BOARD_ID)).length, 0);
+  // Hosting proxies add these headers. Neither can override the configured origin.
+  assert.equal((await handle(request("GET", undefined, {
+    forwarded: "host=internal.example;proto=https",
+    "x-forwarded-host": "internal.example",
+  }), BOARD_ID, undefined, store)).status, 200);
 });
 
 test("production remains denied without explicit valid demo configuration", async () => {

@@ -45,9 +45,9 @@ export function authorize(request: Request, board: string) {
     expectedOrigin = `${url.protocol}//${host}`;
   }
   if (
-    request.headers.has("forwarded") ||
+    !demo && (request.headers.has("forwarded") ||
     (request.headers.has("x-forwarded-host") &&
-      request.headers.get("x-forwarded-host") !== host)
+      request.headers.get("x-forwarded-host") !== host))
   )
     throw new ApiError(403, "Unexpected forwarded host.", "FORBIDDEN");
   const origin = request.headers.get("origin");
