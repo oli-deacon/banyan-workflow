@@ -1,12 +1,20 @@
 # Hosted public demo verification — 13 October 2026
 
-Target: https://banyan-workflow.vercel.app. Shared saved synthetic board with no login; live verification pending deployment.
+Live: https://banyan-workflow.vercel.app. Shared saved synthetic board with no login. Vercel production deployment `dpl_75gquXmyfNAYGdGf2ztfd8vHDD4a` is READY, serving application commit `df38875`.
 
 - Added seven regression tests covering hosted CRUD/conflicts and actor labels, denied origins/hosts/boards, fail-closed configuration, fixed collection isolation, blocked writes on limiter failure, shared atomic rate counters, and full-demo creation rejection.
-- All 22 regression tests passed. Type checking passed after correcting a test type; production build status is recorded below after completion.
-- Seeded five synthetic cards into the separate `cards_public_demo` collection. The local `cards` collection has five records; a private checksum baseline was captured before hosted tests.
+- All 22 regression tests, lint, type checking and production build passed. Vercel independently built and deployed the same application successfully.
+- Seeded five synthetic cards into the separate `cards_public_demo` collection. The local `cards` collection has five records; a private checksum baseline was captured before hosted tests and matched after testing.
 - Vercel production secrets configured with explicit user approval for reuse of the app credential. No Atlas network-rule or permission change was made.
 - GitHub integration is not connected; deployments use the Vercel CLI.
+- Live browser: loaded five samples, displayed public/synthetic-data warnings, created a temporary card, edited its summary and moved it to Ready for Review. A fresh tab showed the same saved record and four coherent activity events after API concurrency testing.
+- Live API: GET 200 with `public-demo` mode; simultaneous same-version PATCH requests returned 200 and 409. A cross-origin write returned 403; another board returned 404.
+- Live database: the browser fixture matched its saved API snapshot in `cards_public_demo`. Removed only that exact unchanged fixture, leaving five demo samples. The local board checksum remained unchanged.
+- Hosting compatibility: Vercel adds proxy headers. Hosted mode validates the configured HTTPS URL and Host directly and does not trust forwarded headers; local-only forwarding restrictions remain. Regression tests cover spoofed forwarding headers.
+- Browser console error list was empty after final reload. Vercel error-log query for the final deployment returned no logs; that is a bounded check, not ongoing monitoring. The drain-inspection endpoint returned 404, so external drain configuration could not be verified.
+- Screenshot: `output/vercel-public-demo.jpg`.
+
+Limits: access has been verified from this machine, not the office network. No login, individual attribution, automatic refresh, ongoing monitoring or private-data protection is provided by this public demo. Shared rate limits and a best-effort card capacity guard are enabled. No Atlas network access changes were required.
 
 The sections below are historical evidence for the original local-only implementation.
 

@@ -6,7 +6,7 @@ A Next.js / React / TypeScript workflow board with a server-side API and the off
 
 ## Shared public demo
 
-Hosted-demo target: https://banyan-workflow.vercel.app. Deployment verification is recorded in `QA.md`.
+Live demo: https://banyan-workflow.vercel.app. Browser create/edit/move and shared persistence were verified on 13 October 2026; details are recorded in `QA.md`.
 
 This is a shared, saved board for **synthetic data only**. Anyone can view and edit it without signing in. Do not enter personal, customer or confidential work information. Use **Refresh board** to see other people's changes; stale edits return a conflict rather than overwriting newer work.
 
@@ -83,7 +83,7 @@ API routes: `GET/POST /api/boards/modernization/cards` and `PATCH /api/boards/mo
 
 ## Access boundaries and future authentication
 
-Local mode requires explicit `BANYAN_LOCAL_API=1`, a non-production process and a loopback host. Hosted demo mode permits only the configured HTTPS origin and always selects the separate demo collection. Writes require same-origin JSON requests; cross-site requests and unexpected forwarded hosts are rejected. These checks are not user authentication: the demo is intentionally public.
+Local mode requires explicit `BANYAN_LOCAL_API=1`, a non-production process and a loopback host. Hosted demo mode permits only the configured HTTPS origin and always selects the separate demo collection. Writes require same-origin JSON requests; cross-site requests are rejected. Hosted mode validates the configured origin directly without trusting proxy headers; local mode also rejects unexpected forwarded hosts. These checks are not user authentication: the demo is intentionally public.
 
 Before using private team data, add server-validated login sessions and board membership/roles on every read and write, derive activity actors from authenticated identity, and test those boundaries. Account/provider selection, OAuth grants, new credentials and network changes remain separate decisions.
 
