@@ -8,6 +8,7 @@ import { useBoard } from "@/lib/client/use-board";
 import { useCardGlow } from "@/lib/client/use-card-glow";
 import { needsAttention, type Attention } from "@/lib/attention";
 import { workStateLabel } from "@/lib/workflow";
+import { IdentityFilter, identityOptions } from "./components/identity-filter";
 import { CardEditor } from "./components/card-editor";
 
 export default function Board() {
@@ -46,12 +47,14 @@ export default function Board() {
   const scoped = cards.filter(
     (card) =>
       (!ownerFilter || card.owner === ownerFilter) &&
-      (!workerFilter || card.worker === workerFilter),
+      (!workerFilter || card.worker === workerFilter) &&
+      (!reviewerView || card.reviewer === reviewerView),
   );
   const visible = scoped.filter((card) =>
     needsAttention(card, attention, reviewerView),
   );
-  const filtered = !!ownerFilter || !!workerFilter || attention !== "all";
+  const filtered =
+    !!ownerFilter || !!workerFilter || !!reviewerView || attention !== "all";
   async function open(card: Card | CardSummary) {
     if (openingRef.current) return;
     opener.current = document.activeElement as HTMLElement;
@@ -167,64 +170,34 @@ export default function Board() {
             ))}
           </div>
           <div className="filter-controls">
-            <label>
-              Owner
-              <select
-                aria-label="Filter by owner"
-                value={ownerFilter}
-                onChange={(e) => setOwnerFilter(e.target.value)}
-              >
-                <option value="">All owners</option>
-                {[...new Set(cards.map((card) => card.owner).filter(Boolean))]
-                  .sort()
-                  .map((name) => (
-                    <option key={name}>{name}</option>
-                  ))}
-              </select>
-            </label>
-            <label>
-              Worker
-              <select
-                aria-label="Filter by worker"
-                value={workerFilter}
-                onChange={(e) => setWorkerFilter(e.target.value)}
-              >
-                <option value="">All workers</option>
-                {[...new Set(cards.map((card) => card.worker).filter(Boolean))]
-                  .sort()
-                  .map((name) => (
-                    <option key={name}>{name}</option>
-                  ))}
-              </select>
-            </label>
-            <label>
-              Reviewing as
-              <select
-                aria-label="Reviewing as"
-                value={reviewerView}
-                onChange={(e) => {
-                  setReviewerView(e.target.value);
-                  if (!e.target.value && attention === "mine")
-                    setAttention("all");
-                }}
-              >
-                <option value="">Choose a reviewer</option>
-                {[
-                  ...new Set(
-                    cards.map((card) => card.reviewer).filter(Boolean),
-                  ),
-                ]
-                  .sort()
-                  .map((name) => (
-                    <option key={name}>{name}</option>
-                  ))}
-              </select>
-            </label>
+            <span className="filter-caption">Filter</span>
+            <IdentityFilter
+              label="Owner"
+              value={ownerFilter}
+              options={identityOptions(cards, "owner")}
+              onChange={setOwnerFilter}
+            />
+            <IdentityFilter
+              label="Worker"
+              value={workerFilter}
+              options={identityOptions(cards, "worker")}
+              onChange={setWorkerFilter}
+            />
+            <IdentityFilter
+              label="Reviewer"
+              value={reviewerView}
+              options={identityOptions(cards, "reviewer")}
+              onChange={(value) => {
+                setReviewerView(value);
+                if (!value && attention === "mine") setAttention("all");
+              }}
+            />
             {filtered && (
               <button
                 onClick={() => {
                   setOwnerFilter("");
                   setWorkerFilter("");
+                  setReviewerView("");
                   setAttention("all");
                 }}
               >
@@ -233,8 +206,7 @@ export default function Board() {
             )}
           </div>
           <p className="field-hint" role="status">
-            Showing {visible.length} of {cards.length} cards. “Reviewing as” is
-            a view filter, not a sign-in.
+            Showing {visible.length} of {cards.length} cards.
           </p>
         </section>
       )}

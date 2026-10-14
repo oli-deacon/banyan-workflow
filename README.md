@@ -14,7 +14,7 @@ Cards now have an accountable human **Owner**, an **Assigned worker** (Human or 
 
 Evidence includes output links, a change summary, test results and checks against each current acceptance criterion. Approval requires a reviewer rationale. Editing submitted/approved work reopens it for new evidence and review. Timeline entries retain questions, decisions, assignment snapshots and each evidence submission. These are manually recorded claims; named roles are not authenticated actors and the app does not independently verify tests or output links.
 
-Attention filters show human-input and review queues, with Owner/Worker filters and a declared **Reviewing as** viewpoint. No sign-in or notifications are added.
+Attention filters show human-input and review queues. Compact **Owner**, **Worker** and **Reviewer** buttons open searchable pickers with initials for humans, agent icons, type labels and a checkmark for the selection. Arrow keys and Enter select; Escape closes and returns focus. Each active filter has a clear button. All three role filters narrow the visible board; card assignment fields remain free text. No sign-in or notifications are added.
 
 **Try the guided demo** opens `/demo`, a seven-step, explicitly labelled simulation. It demonstrates a configuration refactor with a human decision, review correction and approval. It uses browser memory only, makes no board API requests and can be replayed without modifying shared cards. No agent executes. See [DEMO_GUIDE.md](DEMO_GUIDE.md) for the presenter script and shared-card instructions.
 

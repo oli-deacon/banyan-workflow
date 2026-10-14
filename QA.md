@@ -1,5 +1,12 @@
 # Verification record
 
+## Searchable role filters — 14 October 2026
+
+- Replaced Owner/Worker/Reviewer board selects with compact reusable searchable popovers: initials for humans, agent icons, explicit type labels, selected checkmarks, active green state and per-filter clearing. Same-name human/agent workers remain a single name filter with an honest Human / Agent label. Card assignment inputs remain free text. Reviewer now consistently narrows the visible board; Clear filters clears every role.
+- 42 unit/API tests pass. Full Chromium suite: 21 passing (18 existing plus 3 picker regressions). Coverage includes case-insensitive search, mixed worker types, selected state, clearing, Arrow/Enter/Escape focus return, long-list scrolling, Tab exit, outside-click dismissal, no results, no assignments, reviewer filtering and clearing. Mobile checks use a touch-enabled Chromium context and tap interactions at 390px.
+- Lint, typecheck and production build pass. Desktop and mobile popup screenshots were inspected. The initial new tests needed option-count assertions scoped to the listbox, and the mobile check exposed toolbar overflow; toolbar actions now wrap. The keyboard check exposed Chromium's implicit scroll-container tab stop, fixed with explicit tabindex=-1 because keyboard navigation belongs to the combobox. Popovers are bounded to the viewport and anchored above/below their trigger.
+- React review: no dependencies added; focus/listener effects are scoped to an open picker and cleaned up; derived filtered options stay out of state; clear/selection restores focus. Browser tests use synthetic routed fixtures and the existing isolated memory board. No database changes, migration, credentials or live card edits. Safari, Firefox, physical devices and screen-reader audits remain untested. Production publication awaits approval.
+
 ## Human–agent demo workflow — 14 October 2026
 
 - Added declared human owner, Human/Agent worker, human reviewer, explicit start/handoff/resume/review/correction/approval, immutable-in-API timeline snapshots and attention filters. Existing columns remain unchanged. Started work cannot bypass review with Move, drag or a status PATCH. Editing submitted or approved work reopens it; earlier evidence remains in history.
