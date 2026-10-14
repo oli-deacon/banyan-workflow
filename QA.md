@@ -1,5 +1,12 @@
 # Verification record
 
+## Guided demo banner removal — 14 October 2026
+
+- Removed only the prominent amber Simulation notice from `/demo` and unused CSS. Retained all other existing demo/simulation labels and behavior.
+- Lint, typecheck and production build pass. Guided walkthrough browser checks at 390px and 1440px verify banner absence, retained disclosures, Flanders handoffs, completion/reset, zero board API requests and no page errors/overflow. The initial mobile assertion incorrectly expected the existing desktop-only brand subtitle to be visible; corrected without changing responsive behavior.
+- No shared-card writes or production deployment. Included in the still-open draft PR #7.
+
+
 ## Flanders guided review — 14 October 2026
 
 - The guided simulation now demonstrates Config Agent → Flanders first-pass review → Flanders auto-fix/recheck → Sam final human review. Finding and revised evidence events identify Flanders as Agent; the live-card human Reviewer model and API remain unchanged.

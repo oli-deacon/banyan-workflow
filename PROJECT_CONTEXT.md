@@ -2,6 +2,10 @@
 
 **Snapshot: 13 October 2026, Melbourne (Australia/Melbourne).** This records agreed decisions and verified state at that date, not a promise that a preview process is still running.
 
+## Guided demo banner removal — 14 October 2026
+
+Removed the prominent amber “Simulation · fictional data.” banner and its unused CSS from `/demo` at the user’s request. Existing guided-demo header (desktop), Restart simulation control/confirmation, Fictional work item label, no-agent-execution text, simulated activity note and step/evidence disclosures remain unchanged. No workflow or shared-card changes. Included in draft PR #7; publication still pending.
+
 ## Flanders guided demo — 14 October 2026
 
 The seven-step isolated walkthrough now routes Config Agent → Flanders (first-pass code review, auto-fix and recheck) → Sam Example (final human review). Flanders finds the missing timeout test; one simulated fix cycle resolves it before human review. Demo timeline events correctly attribute the finding and revised submission to Flanders as Agent. Shared-card roles, API and database are unchanged; no agent actually executes. Publication pending.

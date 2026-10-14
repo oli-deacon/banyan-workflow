@@ -48,12 +48,6 @@ export default function Demo() {
           Restart simulation
         </button>
       </div>
-      <p className="simulation-notice">
-        <strong>Simulation · fictional data.</strong> Each step is advanced by
-        you. No agent runs, no tests execute, and no shared cards are changed.
-        Refreshing restarts this walkthrough. Evidence links are illustrative
-        placeholders.
-      </p>
       <ol className="demo-stages" aria-label="Workflow stages">
         {STATUSES.map((status) => (
           <li

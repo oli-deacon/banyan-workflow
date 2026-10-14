@@ -254,7 +254,12 @@ for (const width of [390, 1440])
     await page.goto("/demo");
     await expect(
       page.getByText("Simulation · fictional data.", { exact: true }),
-    ).toBeVisible();
+    ).toHaveCount(0);
+    await expect(page.getByText("/ guided demo", { exact: true })).toHaveCount(1);
+    if (width === 1440) await expect(page.getByText("/ guided demo", { exact: true })).toBeVisible();
+    await expect(page.getByText("FICTIONAL WORK ITEM", { exact: true })).toBeVisible();
+    await expect(page.getByText(/No agent is connected or executed/)).toBeVisible();
+    await expect(page.getByText(/Simulated events/)).toBeVisible();
     await expect(page.getByText(/Config Agent → Flanders/)).toBeVisible();
     for (const [index, step] of demoSteps.entries()) {
       await page
