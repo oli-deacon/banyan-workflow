@@ -21,7 +21,7 @@ Create a card with fictional Owner, Assigned worker, Worker type and Reviewer va
 Use the same handoff and review actions as the walkthrough, entering your own synthetic questions, decisions and evidence. All actions on the shared board persist and can be seen by other visitors; the guided simulation is separate. There is no automated worker or notification delivery.
 
 - **Needs human input** shows paused work. Filter Owner to find the accountable human's queue.
-- **Awaiting review** shows submitted work. Choose **Reviewing as**, then **Ready for my review** to inspect a reviewer queue. This is only a filter, not sign-in or authorization.
+- **Awaiting review** shows submitted work. Choose **Reviewer**, then **Ready for my review** to inspect a reviewer queue. This is only a filter, not sign-in or authorization.
 - Filter Worker to see assignments to a particular human or agent.
 - Once the workflow starts, use its actions to change stages. Drag and Move remain available for cards outside the workflow. Those cards can be Done without a workflow approval and are explicitly identified in details.
 - Submission needs a summary, 1–10 HTTP(S) output links, test evidence, and checks matching every current acceptance criterion. The reviewer must record an approval rationale or a change request.

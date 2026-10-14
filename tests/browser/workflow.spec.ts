@@ -93,7 +93,10 @@ test("shared workflow records roles, handoff, filters, correction and approval a
     tile.getByLabel(`Move ${title}`, { exact: true }),
   ).toBeDisabled();
   await expect(tile).toHaveAttribute("draggable", "false");
-  await page.getByLabel("Filter by worker").selectOption("Config Agent");
+  await page
+    .getByRole("button", { name: "Filter by worker: Anyone", exact: true })
+    .click();
+  await page.getByRole("option", { name: /Config Agent/ }).click();
   await page.screenshot({
     path: testInfo.outputPath("attention-desktop.png"),
     fullPage: true,
@@ -109,7 +112,10 @@ test("shared workflow records roles, handoff, filters, correction and approval a
   await page
     .getByRole("button", { name: "Close details", exact: true })
     .click();
-  await page.getByLabel("Reviewing as").selectOption("Sam Example");
+  await page
+    .getByRole("button", { name: "Filter by reviewer: Anyone", exact: true })
+    .click();
+  await page.getByRole("option", { name: /Sam Example/ }).click();
   await page.getByRole("button", { name: /^Ready for my review/ }).click();
   await expect(tile).toBeVisible();
   await page.getByRole("button", { name: new RegExp(`^${title}`) }).click();

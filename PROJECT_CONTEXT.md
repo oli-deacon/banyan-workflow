@@ -2,6 +2,14 @@
 
 **Snapshot: 13 October 2026, Melbourne (Australia/Melbourne).** This records agreed decisions and verified state at that date, not a promise that a preview process is still running.
 
+## Searchable board filters prepared — 14 October 2026
+
+Owner, Worker and Reviewer filters now use a shared compact searchable picker with Human/Agent identity labels, initials/agent icons, selected checkmarks, clear buttons, no-match/unassigned-empty messages, keyboard navigation and touch targets. “Reviewing as” is renamed Reviewer; selecting it now narrows the board consistently with Owner and Worker, and Clear filters clears all three roles. The existing reviewer attention queue remains available. Same-name human/agent workers are honestly labelled Human / Agent and preserve the existing name-based matching semantics. Card assignment fields remain free text, with no API, storage or credential changes.
+
+Popup positioning is viewport bounded, opens above or below the trigger, closes on outside click/Tab departure/scroll/resize, and returns focus on selection/Escape. Long lists scroll through keyboard selection; the list itself is not an extra tab stop. Mobile toolbar actions now wrap instead of overflowing. This change awaits publication approval.
+
+The previous human–agent workflow was approved, merged as `abbab5cd83ca85773fc8c0d676b8eb8b22958fe0`, and deployed READY (`dpl_BpRghQJLVSmgAiBuEAL92ZHTkNHq`). The live board, `/demo` and API returned HTTP 200; all five sample revisions remained 2 and no runtime errors were found. The preparation notes below are historical.
+
 ## Human–agent demo workflow prepared — 14 October 2026
 
 User authorized implementation of the five recommended demo capabilities: roles, handoffs, evidence/review, timeline and attention filters, plus an isolated guided simulation. Owner remains the accountable human. Worker is a declared Human/Agent label; Reviewer is a declared human. There are no authenticated roles, real agent execution or notifications.
@@ -10,7 +18,7 @@ Shared cards now support explicit versioned commands: start, request_input, resu
 
 The API accepts commands separately from editable card fields, rejects injected state/history/actors, and uses the same board/id/version compare-and-set in MongoDB. Roles are normalized/defaulted; omitted legacy roles are preserved. Summaries project only workflow state, not evidence/history. Commands are bounded to 12 KB and history retains the latest 500 events. The existing Stop Condition backfill excludes role labels from task-context matching and skips started workflows; do not rerun it on the completed hosted samples.
 
-`/demo` is a browser-memory-only seven-step walkthrough using the shared transition rules. It makes no board API requests or writes, requires no credentials, and resets on reload/explicit restart. All names, decisions, times, tests and links are fictional. It demonstrates a pause, human decision, first evidence submission, reviewer correction, resubmission and approval. `DEMO_GUIDE.md` is the presenter script. Current live cards remain untouched. Publication of this new workflow awaits approval.
+`/demo` is a browser-memory-only seven-step walkthrough using the shared transition rules. It makes no board API requests or writes, requires no credentials, and resets on reload/explicit restart. All names, decisions, times, tests and links are fictional. It demonstrates a pause, human decision, first evidence submission, reviewer correction, resubmission and approval. `DEMO_GUIDE.md` is the presenter script. Current live cards remain untouched. This workflow was subsequently deployed; see publication record above.
 
 Owner was approved and deployed from merge `cef6ab23b6994ff49bbd3f2ff19e6bcfc26bc3a7`, deployment `dpl_JB73Bum3vSF5Mk73ZTzB2dLSDWN4`; the canonical live API returned 200 with owner fields and all five existing sample revisions preserved. Historical Owner preparation notes below are superseded by that deployment.
 
