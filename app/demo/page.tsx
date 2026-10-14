@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { STATUSES } from "@/lib/board";
-import { advanceDemo, demoCard, demoSteps } from "@/lib/demo-scenario";
+import {
+  advanceDemoStep,
+  demoCard,
+  demoSteps,
+  demoHandoff,
+} from "@/lib/demo-scenario";
 import { WorkflowPanel } from "../components/workflow-panel";
 import { ActivityTimeline } from "../components/activity-timeline";
 
@@ -70,7 +75,7 @@ export default function Demo() {
             <h2>{next?.title ?? "Reviewed and complete"}</h2>
             <p>
               {next?.explanation ??
-                "The human owns the outcome, the agent brings evidence, and the reviewer decides when the work is complete. The timeline retains every question, decision and submission."}
+                "Alex owns the outcome, Config Agent develops the change, Flanders reviews and auto-fixes first, and Sam makes the final human review decision. The timeline retains every question, decision and submission."}
             </p>
           </div>
           {next && (
@@ -80,7 +85,7 @@ export default function Demo() {
               onClick={() =>
                 setCard((current) => {
                   const step = demoSteps[current.version - 1];
-                  return step ? advanceDemo(current, step.command) : current;
+                  return step ? advanceDemoStep(current, step) : current;
                 })
               }
             >
@@ -109,9 +114,16 @@ export default function Demo() {
             <h3>Stop Condition</h3>
             <p>{card.stopCondition}</p>
           </details>
+          <p className="handoff-note">
+            <strong>Review handoff</strong>
+            <br />
+            Config Agent → Flanders (Agent · first review & auto-fix) → Sam
+            Example (Human · final review)
+          </p>
           <WorkflowPanel
             card={card}
             readOnly
+            simulatedNext={demoHandoff(card)}
             onAction={async () => {}}
             onBusyChange={() => {}}
             onDirtyChange={() => {}}

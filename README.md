@@ -16,7 +16,7 @@ Evidence includes output links, a change summary, test results and checks agains
 
 Attention filters show human-input and review queues. Compact **Owner**, **Worker** and **Reviewer** buttons open searchable pickers with initials for humans, agent icons, type labels and a checkmark for the selection. Arrow keys and Enter select; Escape closes and returns focus. Each active filter has a clear button. All three role filters narrow the visible board; card assignment fields remain free text. No sign-in or notifications are added.
 
-**Try the guided demo** opens `/demo`, a seven-step, explicitly labelled simulation. It demonstrates a configuration refactor with a human decision, review correction and approval. It uses browser memory only, makes no board API requests and can be replayed without modifying shared cards. No agent executes. See [DEMO_GUIDE.md](DEMO_GUIDE.md) for the presenter script and shared-card instructions.
+**Try the guided demo** opens `/demo`, a seven-step, explicitly labelled simulation. It demonstrates a configuration refactor with a human decision, Flanders’ first-pass code review and auto-fix/recheck loop, then final human review and approval. It uses browser memory only, makes no board API requests and can be replayed without modifying shared cards. No agent executes. See [DEMO_GUIDE.md](DEMO_GUIDE.md) for the presenter script and shared-card instructions.
 
 Existing cards default to unstarted with unassigned Worker/Reviewer; no migration or sample overwrite is needed. Legacy clients preserve omitted role fields, and workflow state/history are server-owned. Actions use the existing atomic version checks, access rules and write limits.
 

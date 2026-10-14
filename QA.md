@@ -1,5 +1,13 @@
 # Verification record
 
+## Flanders guided review — 14 October 2026
+
+- The guided simulation now demonstrates Config Agent → Flanders first-pass review → Flanders auto-fix/recheck → Sam final human review. Finding and revised evidence events identify Flanders as Agent; the live-card human Reviewer model and API remain unchanged.
+- All 43 unit/API tests pass, including demo attribution/order, preserved initial state and human-only final approval. All 5 focused workflow browser tests pass, including the complete shared workflow and guided completion/reset at 390px and 1440px. Browser assertions check the current Flanders/Sam handoff, Agent timeline attribution, zero board requests, no page errors and no horizontal overflow. Mobile screenshot inspected.
+- Lint, typecheck and production build pass. React review: derived handoff text, existing functional state update, no new effects/dependencies; simulation override applies only in read-only mode. Initial regression caught that human resume increments work attempts; review routing now counts evidence submissions instead.
+- No live writes, credentials or real agent execution. Production publication pending approval.
+
+
 ## Searchable role filters — 14 October 2026
 
 - Replaced Owner/Worker/Reviewer board selects with compact reusable searchable popovers: initials for humans, agent icons, explicit type labels, selected checkmarks, active green state and per-filter clearing. Same-name human/agent workers remain a single name filter with an honest Human / Agent label. Card assignment inputs remain free text. Reviewer now consistently narrows the visible board; Clear filters clears every role.

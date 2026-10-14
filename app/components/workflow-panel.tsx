@@ -13,6 +13,7 @@ export function WorkflowPanel({
   card,
   disabled = false,
   readOnly = false,
+  simulatedNext,
   onAction,
   onBusyChange,
   onDirtyChange,
@@ -20,6 +21,7 @@ export function WorkflowPanel({
   card: RecordCard;
   disabled?: boolean;
   readOnly?: boolean;
+  simulatedNext?: string;
   onAction: (command: WorkflowCommand) => Promise<void>;
   onBusyChange: (value: boolean) => void;
   onDirtyChange: (value: boolean) => void;
@@ -122,13 +124,15 @@ export function WorkflowPanel({
       {workflow.attempt > 0 && (
         <p className="field-hint">
           Work attempt {workflow.attempt} ·{" "}
-          {workflow.state === "awaiting_input"
-            ? `Next: ${card.owner} records a decision`
-            : workflow.state === "in_review"
-              ? `Next: ${card.reviewer} reviews the evidence`
-              : workflow.state === "approved"
-                ? "Review complete"
-                : `Next: ${card.worker} records progress or submits evidence`}
+          {readOnly && simulatedNext
+            ? simulatedNext
+            : workflow.state === "awaiting_input"
+              ? `Next: ${card.owner} records a decision`
+              : workflow.state === "in_review"
+                ? `Next: ${card.reviewer} reviews the evidence`
+                : workflow.state === "approved"
+                  ? "Review complete"
+                  : `Next: ${card.worker} records progress or submits evidence`}
         </p>
       )}
       {workflow.question && (
