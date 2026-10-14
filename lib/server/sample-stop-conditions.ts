@@ -40,12 +40,13 @@ export async function backfillSampleStopConditions(
       outcome = "already-set";
     else if (
       current.sample !== true ||
+      (current.workflow !== undefined && current.workflow.state !== "idle") ||
       !Number.isSafeInteger(current.version) ||
       current.version < 1 ||
       FIELDS.some(
         (field) =>
           field !== "stopCondition" &&
-          field !== "owner" &&
+          !["owner", "worker", "workerKind", "reviewer"].includes(field) &&
           current[field] !== sample[field],
       )
     )
@@ -67,7 +68,9 @@ export async function backfillSampleStopConditions(
           // Context and missing-field predicates also protect against older writers.
           ...Object.fromEntries(
             FIELDS.filter(
-              (field) => field !== "stopCondition" && field !== "owner",
+              (field) =>
+                field !== "stopCondition" &&
+                !["owner", "worker", "workerKind", "reviewer"].includes(field),
             ).map((field) => [field, current[field]]),
           ),
           $or: [{ stopCondition: { $exists: false } }, { stopCondition: "" }],

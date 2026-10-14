@@ -9,6 +9,9 @@ export const FIELDS = [
   "title",
   "summary",
   "owner",
+  "worker",
+  "workerKind",
+  "reviewer",
   "objective",
   "context",
   "references",
@@ -33,6 +36,9 @@ export function blankCard(status: Status = "To Do", id = ""): Card {
     title: "",
     summary: "",
     owner: "",
+    worker: "",
+    workerKind: "human",
+    reviewer: "",
     objective: "",
     context: "",
     references: "",
@@ -54,6 +60,10 @@ export function validateCard(card: Card): string | null {
   if (!card.title.trim()) return "Give this card a title.";
   if (card.title.length > 160)
     return "Keep the title to 160 characters or fewer.";
+  if (!["human", "agent"].includes(card.workerKind))
+    return "Choose a human or agent worker.";
+  if (card.worker.length > 100 || card.reviewer.length > 100)
+    return "Keep worker and reviewer names to 100 characters or fewer.";
   if (card.owner.length > 100)
     return "Keep the owner to 100 characters or fewer.";
   if (card.summary.length > 400)
@@ -141,11 +151,28 @@ export const samples: Card[] = [
 
 // Legacy documents and responses predate these optional fields.
 export function withCardDefaults<
-  T extends { stopCondition?: string; owner?: string },
->(card: T): T & { stopCondition: string; owner: string } {
+  T extends {
+    stopCondition?: string;
+    owner?: string;
+    worker?: string;
+    workerKind?: string;
+    reviewer?: string;
+  },
+>(
+  card: T,
+): T & {
+  stopCondition: string;
+  owner: string;
+  worker: string;
+  workerKind: string;
+  reviewer: string;
+} {
   return {
     ...card,
     stopCondition: card.stopCondition ?? "",
     owner: card.owner ?? "",
+    worker: card.worker ?? "",
+    workerKind: card.workerKind ?? "human",
+    reviewer: card.reviewer ?? "",
   };
 }

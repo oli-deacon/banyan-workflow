@@ -1,3 +1,4 @@
+import { parseCommand, WorkflowError } from "../workflow";
 import { isStatus } from "../board";
 import { ApiError, BOARD_ID, exact, object, parseCard, version } from "./model";
 import { getStore, storageMode, type Store } from "./store";
@@ -136,21 +137,33 @@ export async function handle(
       );
     }
     if (request.method === "PATCH" && id) {
-      exact(input, ["card", "status", "expectedVersion"]);
+      exact(input, ["card", "status", "command", "expectedVersion"]);
       const expected = version(input.expectedVersion);
+      if (
+        ["card", "status", "command"].filter((key) => key in input).length !== 1
+      )
+        throw new ApiError(400, "Choose one update type.");
       let patch;
-      if ("card" in input) {
+      if ("command" in input) {
+        patch = { command: parseCommand(input.command) };
+      } else if ("card" in input) {
         if ("status" in input)
           throw new ApiError(400, "Choose one update type.");
         patch = parseCard(input.card);
         if (patch.id !== id) throw new ApiError(400, "Card ID does not match.");
         // Older clients must not erase optional fields they cannot edit.
         const supplied = object(input.card);
-        if (!("stopCondition" in supplied) || !("owner" in supplied)) {
+        const optional = [
+          "stopCondition",
+          "owner",
+          "worker",
+          "workerKind",
+          "reviewer",
+        ] as const;
+        if (optional.some((key) => !(key in supplied))) {
           const current = await store.get(board, id);
-          if (!("stopCondition" in supplied))
-            patch.stopCondition = current.stopCondition ?? "";
-          if (!("owner" in supplied)) patch.owner = current.owner ?? "";
+          for (const key of optional)
+            if (!(key in supplied)) patch[key] = current[key];
         }
       } else {
         if (!isStatus(input.status))
@@ -163,15 +176,19 @@ export async function handle(
     }
     throw new ApiError(405, "Method not allowed.");
   } catch (error) {
-    const known = error instanceof ApiError;
+    const failure =
+      error instanceof WorkflowError
+        ? new ApiError(400, error.message, "WORKFLOW_INVALID")
+        : error;
+    const known = failure instanceof ApiError;
     return Response.json(
       {
         error: known
-          ? error.message
+          ? failure.message
           : "Database request failed. The outcome may be uncertain; keep your draft and refresh the board before retrying.",
-        code: known ? error.code : "DATABASE_UNAVAILABLE",
+        code: known ? failure.code : "DATABASE_UNAVAILABLE",
       },
-      { status: known ? error.status : 503 },
+      { status: known ? failure.status : 503 },
     );
   }
 }

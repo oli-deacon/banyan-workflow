@@ -52,7 +52,9 @@ function fixture() {
         "sample",
         "version",
         ...FIELDS.filter(
-          (field) => field !== "stopCondition" && field !== "owner",
+          (field) =>
+            field !== "stopCondition" &&
+            !["owner", "worker", "workerKind", "reviewer"].includes(field),
         ),
       ])
         assert.ok(Object.hasOwn(filter, key));
@@ -196,4 +198,16 @@ test("backfill requires an explicit allowed collection and defaults to dry run",
     ["--collection=cards", "--collection=cards_public_demo"],
   ])
     assert.throws(() => parseBackfillArgs(args));
+});
+
+test("backfill leaves started human-agent workflows for review", async () => {
+  const f = fixture();
+  f.records[0].workflow.state = "in_review";
+  f.records[0].worker = "Config Agent";
+  f.records[0].workerKind = "agent";
+  f.records[0].reviewer = "Sam Example";
+  const before = structuredClone(f.records[0]);
+  const result = await backfillSampleStopConditions(f.collection, true);
+  assert.equal(result[0].outcome, "review-changed-context");
+  assert.deepEqual(f.records[0], before);
 });
