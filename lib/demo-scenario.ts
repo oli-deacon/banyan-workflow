@@ -4,6 +4,7 @@ import {
   transition,
   type Evidence,
   type WorkflowCommand,
+  type WorkflowEvent,
 } from "./workflow";
 import type { RecordCard } from "./server/model";
 
@@ -69,11 +70,12 @@ export const demoSteps: {
   explanation: string;
   button: string;
   command: WorkflowCommand;
+  actor?: Pick<WorkflowEvent, "name" | "role">;
 }[] = [
   {
     title: "Delegate bounded work",
     explanation:
-      "Alex owns the outcome. Config Agent does the work. Sam reviews it. Starting records intent; no code is executed.",
+      "Alex owns the outcome. Config Agent develops the change. Flanders always performs the first code review and auto-fix loop before Sam gives final human review. Starting records intent; no code is executed.",
     button: "Simulate work starting",
     command: { type: "start" },
   },
@@ -98,33 +100,35 @@ export const demoSteps: {
     },
   },
   {
-    title: "Submit evidence",
+    title: "Hand off to Flanders",
     explanation:
-      "The agent reports a proposed diff, tests and acceptance checks. These are simulated claims for Sam to inspect, not independently verified test results.",
-    button: "Simulate the first submission",
+      "Config Agent submits a proposed diff, tests and acceptance checks to Flanders, the first-pass code review agent. Sam receives the work only after this review and auto-fix loop. These results are simulated claims.",
+    button: "Send the example to Flanders",
     command: { type: "submit_review", evidence },
   },
   {
-    title: "Reviewer requests a correction",
+    title: "Flanders finds a gap",
     explanation:
-      "Sam spots missing coverage despite the checked acceptance criteria. Human review sends work back with a specific correction.",
-    button: "Record the example change request",
+      "Flanders spots missing coverage despite the checked acceptance criteria and opens its auto-fix loop. The finding returns the task to In Progress before any human final review.",
+    button: "Record Flanders’ finding",
+    actor: { name: "Flanders", role: "agent" },
     command: {
       type: "request_changes",
       note: "Add an explicit test that an unset local timeout resolves to 30 seconds. The broad validation tests do not demonstrate that edge case.",
     },
   },
   {
-    title: "Resubmit with stronger evidence",
+    title: "Flanders fixes, rechecks and hands off",
     explanation:
-      "The correction adds the missing test. Both submissions remain visible so the team can compare evidence across attempts.",
-    button: "Simulate the revised submission",
+      "Flanders applies the missing test and rechecks the revised diff and tests. This example resolves in one auto-fix cycle, then passes to Sam for final human review. If a fix needs a human decision or repeated attempts make no progress, pause and ask Alex. Both evidence submissions remain in history.",
+    button: "Simulate Flanders’ fix and handoff",
+    actor: { name: "Flanders", role: "agent" },
     command: {
       type: "submit_review",
       evidence: {
         ...evidence,
         summary:
-          "Illustrative revision: added a specific local timeout fallback test and clarified the local setup notes.",
+          "Illustrative Flanders auto-fix and recheck: added a specific local timeout fallback test and clarified the local setup notes. No remaining finding in this example; handed to Sam for final human review.",
         tests:
           "SIMULATED: npm test — 13 passing. Added: unset local timeout resolves to 30 seconds. Production missing-value test still fails fast as intended.",
         links: [
@@ -137,7 +141,7 @@ export const demoSteps: {
   {
     title: "Human approval",
     explanation:
-      "Sam records why the revised evidence is sufficient. Approval completes the card; it does not merge code or deploy anything.",
+      "Sam performs the final human review after Flanders’ first pass and auto-fix loop, and records why the revised evidence is sufficient. Approval completes the card; it does not merge code or deploy anything.",
     button: "Record the example approval",
     command: {
       type: "approve",
@@ -173,4 +177,26 @@ export function advanceDemo(
       },
     ],
   };
+}
+
+// Demo-only attribution: shared-card reviewers remain human and API rules are unchanged.
+export function advanceDemoStep(
+  card: RecordCard,
+  step: (typeof demoSteps)[number],
+): RecordCard {
+  const next = advanceDemo(card, step.command);
+  const event = next.activity.at(-1)?.workflow;
+  if (event && step.actor) Object.assign(event, step.actor);
+  return next;
+}
+
+export function demoHandoff(card: RecordCard): string | undefined {
+  if (
+    card.workflow.state === "in_review" &&
+    card.activity.filter((event) => event.workflow?.type === "submit_review")
+      .length === 1
+  )
+    return "Next: Flanders performs the first-pass code review";
+  if (card.workflow.state === "working" && card.workflow.feedback)
+    return "Next: Flanders auto-fixes the finding and rechecks before handoff to Sam";
 }

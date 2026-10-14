@@ -2,11 +2,21 @@
 
 **Snapshot: 13 October 2026, Melbourne (Australia/Melbourne).** This records agreed decisions and verified state at that date, not a promise that a preview process is still running.
 
+## Guided demo banner removal — 14 October 2026
+
+Removed the prominent amber “Simulation · fictional data.” banner and its unused CSS from `/demo` at the user’s request. Existing guided-demo header (desktop), Restart simulation control/confirmation, Fictional work item label, no-agent-execution text, simulated activity note and step/evidence disclosures remain unchanged. No workflow or shared-card changes. Included in draft PR #7; publication still pending.
+
+## Flanders guided demo — 14 October 2026
+
+The seven-step isolated walkthrough now routes Config Agent → Flanders (first-pass code review, auto-fix and recheck) → Sam Example (final human review). Flanders finds the missing timeout test; one simulated fix cycle resolves it before human review. Demo timeline events correctly attribute the finding and revised submission to Flanders as Agent. Shared-card roles, API and database are unchanged; no agent actually executes. Publication pending.
+
+PR #6 searchable filters was approved, merged at `9acc2e0f38e400a84ea4ad3d4cbde187a75b9fda` and deployed READY (`dpl_FLYSooVqsoMkYPsRymLRMhKsrQLu`). Production board/demo/API checks passed with five cards and no runtime errors found.
+
 ## Searchable board filters prepared — 14 October 2026
 
 Owner, Worker and Reviewer filters now use a shared compact searchable picker with Human/Agent identity labels, initials/agent icons, selected checkmarks, clear buttons, no-match/unassigned-empty messages, keyboard navigation and touch targets. “Reviewing as” is renamed Reviewer; selecting it now narrows the board consistently with Owner and Worker, and Clear filters clears all three roles. The existing reviewer attention queue remains available. Same-name human/agent workers are honestly labelled Human / Agent and preserve the existing name-based matching semantics. Card assignment fields remain free text, with no API, storage or credential changes.
 
-Popup positioning is viewport bounded, opens above or below the trigger, closes on outside click/Tab departure/scroll/resize, and returns focus on selection/Escape. Long lists scroll through keyboard selection; the list itself is not an extra tab stop. Mobile toolbar actions now wrap instead of overflowing. This change awaits publication approval.
+Popup positioning is viewport bounded, opens above or below the trigger, closes on outside click/Tab departure/scroll/resize, and returns focus on selection/Escape. Long lists scroll through keyboard selection; the list itself is not an extra tab stop. Mobile toolbar actions now wrap instead of overflowing. This change was published through PR #6 as recorded above.
 
 The previous human–agent workflow was approved, merged as `abbab5cd83ca85773fc8c0d676b8eb8b22958fe0`, and deployed READY (`dpl_BpRghQJLVSmgAiBuEAL92ZHTkNHq`). The live board, `/demo` and API returned HTTP 200; all five sample revisions remained 2 and no runtime errors were found. The preparation notes below are historical.
 

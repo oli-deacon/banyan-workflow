@@ -2,23 +2,23 @@
 
 Use **Try the guided demo** on the board, or open `/demo`. Allow about five minutes for the walkthrough, then discuss where your team's handoffs differ.
 
-This is an explicit simulation: fictional people, agent, decisions, timestamps, test results and output links. Each step advances only when the presenter clicks. It does not call the board API, launch an agent, run code, merge a PR, deploy, or change shared cards. Reload or **Restart simulation** resets only the walkthrough. No connection setup is required.
+This is an explicit simulation: fictional people, agent activity, decisions, timestamps, test results and output links. Each step advances only when the presenter clicks. It does not call the board API, launch an agent, run code, merge a PR, deploy, or change shared cards. Reload or **Restart simulation** resets only the walkthrough. No connection setup is required.
 
 ## Walkthrough
 
-1. **Delegate bounded work.** Alex Example is the accountable human. Config Agent is assigned the configuration refactor; Sam Example is the human reviewer. Open the task brief to show objective, constraints, acceptance criteria and Stop Condition.
+1. **Delegate bounded work.** Alex Example is the accountable human. Config Agent is assigned the configuration refactor; Flanders always performs the first-pass code review and auto-fix loop; Sam Example is the final human reviewer. Open the task brief to show objective, constraints, acceptance criteria and Stop Condition.
 2. **Pause for a decision.** The agent asks whether an unresolved local timeout should use a default. Point out that In Progress and Awaiting human input describe different things: board stage and work state.
 3. **Record the human decision.** Alex allows a fictional local-only default while keeping production explicit. The question and decision remain in history.
-4. **Submit evidence.** Show the illustrative change summary, output links, test report and checks against each acceptance criterion. Checked boxes are claims requiring review; Banyan does not independently verify the evidence.
-5. **Request a correction.** Sam identifies a missing test of the local timeout default. The task returns to In Progress with specific feedback.
-6. **Resubmit.** The revised evidence includes the additional test. Expand both submission events in Activity history to compare them.
-7. **Approve.** Sam records the rationale. Done means review completed in this workflow, not code merged or deployed.
+4. **Hand off to Flanders.** Show the illustrative change summary, output links, test report and checks against each acceptance criterion. Checked boxes are claims requiring review; Banyan does not independently verify the evidence.
+5. **Flanders finds a gap.** The code review agent identifies a missing test of the local timeout default. The task returns to In Progress with specific feedback.
+6. **Flanders auto-fixes, rechecks and hands off.** The revised evidence includes the additional test. This example resolves in one cycle before Sam receives it for final human review. Pause for Alex if a fix needs a human decision or repeated attempts make no progress. Expand both submission events in Activity history to compare them.
+7. **Human final review and approval.** After Flanders’ pass, Sam records the rationale. Done means review completed in this workflow, not code merged or deployed.
 
 ## Try the shared workflow with a synthetic card
 
 Create a card with fictional Owner, Assigned worker, Worker type and Reviewer values. Add an objective, acceptance criteria (one per line) and Stop Condition. Save, open the card, then choose **Record work started**.
 
-Use the same handoff and review actions as the walkthrough, entering your own synthetic questions, decisions and evidence. All actions on the shared board persist and can be seen by other visitors; the guided simulation is separate. There is no automated worker or notification delivery.
+Flanders’ first-pass review and auto-fix are simulated only in the guided demo; shared cards still have one human Reviewer and no automated review routing. Use the shared handoff and review actions, entering your own synthetic questions, decisions and evidence. All actions on the shared board persist and can be seen by other visitors; the guided simulation is separate. There is no automated worker or notification delivery.
 
 - **Needs human input** shows paused work. Filter Owner to find the accountable human's queue.
 - **Awaiting review** shows submitted work. Choose **Reviewer**, then **Ready for my review** to inspect a reviewer queue. This is only a filter, not sign-in or authorization.

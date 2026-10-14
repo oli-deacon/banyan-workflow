@@ -3,7 +3,13 @@ import assert from "node:assert/strict";
 import type { Collection } from "mongodb";
 import { blankCard } from "../lib/board";
 import { summarizeCard } from "../lib/card-types";
-import { demoCard, demoSteps, advanceDemo } from "../lib/demo-scenario";
+import {
+  demoCard,
+  demoSteps,
+  advanceDemo,
+  advanceDemoStep,
+  demoHandoff,
+} from "../lib/demo-scenario";
 import { needsAttention } from "../lib/attention";
 import { blankWorkflow, parseCommand } from "../lib/workflow";
 import {
@@ -385,4 +391,32 @@ test("attention filters reflect workflow and reviewer; simulations are independe
   );
   const bare = blankCard();
   assert.equal(bare.workerKind, "human");
+});
+
+test("guided review routes through Flanders as an agent before human approval", () => {
+  let card = demoCard();
+  const initial = structuredClone(card);
+  for (const step of demoSteps.slice(0, 4)) card = advanceDemoStep(card, step);
+  assert.match(demoHandoff(card)!, /Flanders.*first-pass/);
+  assert.equal(card.workflow.state, "in_review");
+  card = advanceDemoStep(card, demoSteps[4]);
+  assert.equal(card.workflow.state, "working");
+  assert.equal(card.activity.at(-1)?.workflow?.name, "Flanders");
+  assert.equal(card.activity.at(-1)?.workflow?.role, "agent");
+  assert.match(demoHandoff(card)!, /Flanders auto-fixes/);
+  card = advanceDemoStep(card, demoSteps[5]);
+  assert.equal(card.workflow.state, "in_review");
+  assert.equal(card.reviewer, "Sam Example");
+  assert.equal(demoHandoff(card), undefined);
+  assert.equal(card.activity.at(-1)?.workflow?.name, "Flanders");
+  assert.equal(card.activity.at(-1)?.workflow?.role, "agent");
+  assert.match(
+    card.workflow.evidence!.summary,
+    /Flanders auto-fix and recheck/,
+  );
+  card = advanceDemoStep(card, demoSteps[6]);
+  assert.equal(card.workflow.state, "approved");
+  assert.equal(card.activity.at(-1)?.workflow?.name, "Sam Example");
+  assert.equal(card.activity.at(-1)?.workflow?.role, "human");
+  assert.deepEqual(demoCard(), initial);
 });

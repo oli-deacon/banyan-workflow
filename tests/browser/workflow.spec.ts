@@ -254,11 +254,31 @@ for (const width of [390, 1440])
     await page.goto("/demo");
     await expect(
       page.getByText("Simulation · fictional data.", { exact: true }),
-    ).toBeVisible();
-    for (const step of demoSteps) {
+    ).toHaveCount(0);
+    await expect(page.getByText("/ guided demo", { exact: true })).toHaveCount(1);
+    if (width === 1440) await expect(page.getByText("/ guided demo", { exact: true })).toBeVisible();
+    await expect(page.getByText("FICTIONAL WORK ITEM", { exact: true })).toBeVisible();
+    await expect(page.getByText(/No agent is connected or executed/)).toBeVisible();
+    await expect(page.getByText(/Simulated events/)).toBeVisible();
+    await expect(page.getByText(/Config Agent → Flanders/)).toBeVisible();
+    for (const [index, step] of demoSteps.entries()) {
       await page
         .getByRole("button", { name: step.button, exact: true })
         .click();
+      if (index === 3)
+        await expect(page.getByText(/Next: Flanders performs/)).toBeVisible();
+      if (index === 4) {
+        await expect(page.getByText(/Next: Flanders auto-fixes/)).toBeVisible();
+        await expect(
+          page.locator(".activity").getByText(/Flanders · Agent/),
+        ).toHaveCount(1);
+      }
+      if (index === 5) {
+        await expect(page.getByText(/Next: Sam Example reviews/)).toBeVisible();
+        await expect(
+          page.locator(".activity").getByText(/Flanders · Agent/),
+        ).toHaveCount(2);
+      }
     }
     await expect(
       page.getByRole("heading", { name: "Reviewed and complete", exact: true }),

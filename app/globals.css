@@ -1370,15 +1370,6 @@ fieldset.detail-body {
   padding: 3px 0;
   border: 0;
 }
-.simulation-notice {
-  padding: 16px;
-  background: #fff3d9;
-  border: 1px solid #e7d5b2;
-  border-radius: 10px;
-  color: #725823;
-  font-size: 14px;
-  line-height: 1.6;
-}
 .demo-stages {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
