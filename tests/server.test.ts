@@ -358,11 +358,15 @@ test("list returns compact summaries; detail returns complete content with the s
   assert.deepEqual(Object.keys(data.cards[0]).sort(), [
     "id",
     "owner",
+    "reviewer",
     "sample",
     "status",
     "summary",
     "title",
     "version",
+    "workState",
+    "worker",
+    "workerKind",
   ]);
   assert.ok(JSON.stringify(data).length < 1000);
   const detail = await handle(request("GET"), BOARD_ID, card.id, store);
@@ -399,6 +403,10 @@ test("Mongo list projects out detail and activity fields at the database", async
         title: 1,
         summary: 1,
         owner: 1,
+        worker: 1,
+        workerKind: 1,
+        reviewer: 1,
+        "workflow.state": 1,
         status: 1,
         sample: 1,
         version: 1,

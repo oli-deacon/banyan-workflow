@@ -8,6 +8,18 @@ Owner is a free-text responsibility label (up to 100 characters), shown on the b
 
 Board cards include a cursor-following border glow adapted from [React Bits Border Glow](https://reactbits.dev/components/border-glow), with a static keyboard-focus treatment and reduced-motion support. Attribution and license: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
+## Human and agent workflow
+
+Cards now have an accountable human **Owner**, an **Assigned worker** (Human or Agent), and a human **Reviewer**. Explicit actions record work starting, questions for human input, decisions and resume, evidence submission, requested changes and approval. Workflow state is separate from the four board columns. Starting validates the brief and roles; started work changes stages through these actions. Ordinary unstarted cards retain manual Move/drag.
+
+Evidence includes output links, a change summary, test results and checks against each current acceptance criterion. Approval requires a reviewer rationale. Editing submitted/approved work reopens it for new evidence and review. Timeline entries retain questions, decisions, assignment snapshots and each evidence submission. These are manually recorded claims; named roles are not authenticated actors and the app does not independently verify tests or output links.
+
+Attention filters show human-input and review queues, with Owner/Worker filters and a declared **Reviewing as** viewpoint. No sign-in or notifications are added.
+
+**Try the guided demo** opens `/demo`, a seven-step, explicitly labelled simulation. It demonstrates a configuration refactor with a human decision, review correction and approval. It uses browser memory only, makes no board API requests and can be replayed without modifying shared cards. No agent executes. See [DEMO_GUIDE.md](DEMO_GUIDE.md) for the presenter script and shared-card instructions.
+
+Existing cards default to unstarted with unassigned Worker/Reviewer; no migration or sample overwrite is needed. Legacy clients preserve omitted role fields, and workflow state/history are server-owned. Actions use the existing atomic version checks, access rules and write limits.
+
 ## Shared public demo
 
 Live demo: https://banyan-workflow.vercel.app. Browser create/edit/move and shared persistence were verified on 13 October 2026; details are recorded in `QA.md`.

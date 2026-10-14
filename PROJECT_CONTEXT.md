@@ -2,11 +2,23 @@
 
 **Snapshot: 13 October 2026, Melbourne (Australia/Melbourne).** This records agreed decisions and verified state at that date, not a promise that a preview process is still running.
 
+## Human–agent demo workflow prepared — 14 October 2026
+
+User authorized implementation of the five recommended demo capabilities: roles, handoffs, evidence/review, timeline and attention filters, plus an isolated guided simulation. Owner remains the accountable human. Worker is a declared Human/Agent label; Reviewer is a declared human. There are no authenticated roles, real agent execution or notifications.
+
+Shared cards now support explicit versioned commands: start, request_input, resume, submit_review, request_changes and approve. State is separate from columns (idle, working, awaiting_input, in_review, approved). Start requires roles/objective/acceptance/Stop Condition. Human questions, decisions, feedback and rationale are required. Review submission checks evidence shape, safe HTTP(S) links and all current acceptance criteria. Started cards cannot bypass review through direct Move/drag or edited status. Any submitted/approved card edit reopens work and clears current evidence; historical snapshots are retained. Unstarted legacy cards keep manual status controls.
+
+The API accepts commands separately from editable card fields, rejects injected state/history/actors, and uses the same board/id/version compare-and-set in MongoDB. Roles are normalized/defaulted; omitted legacy roles are preserved. Summaries project only workflow state, not evidence/history. Commands are bounded to 12 KB and history retains the latest 500 events. The existing Stop Condition backfill excludes role labels from task-context matching and skips started workflows; do not rerun it on the completed hosted samples.
+
+`/demo` is a browser-memory-only seven-step walkthrough using the shared transition rules. It makes no board API requests or writes, requires no credentials, and resets on reload/explicit restart. All names, decisions, times, tests and links are fictional. It demonstrates a pause, human decision, first evidence submission, reviewer correction, resubmission and approval. `DEMO_GUIDE.md` is the presenter script. Current live cards remain untouched. Publication of this new workflow awaits approval.
+
+Owner was approved and deployed from merge `cef6ab23b6994ff49bbd3f2ff19e6bcfc26bc3a7`, deployment `dpl_JB73Bum3vSF5Mk73ZTzB2dLSDWN4`; the canonical live API returned 200 with owner fields and all five existing sample revisions preserved. Historical Owner preparation notes below are superseded by that deployment.
+
 ## Card owner — 14 October 2026
 
 Optional `owner` is a free-text responsibility label limited to 100 characters, with whitespace normalized on API saves. It appears in the basic create/edit form, board footer, reading view and activity history. Blank/missing owners display Unassigned. Samples remain unassigned; no people or business responsibilities were invented. Public-demo help requests fictional names. This does not add user accounts, permissions or notifications.
 
-The API and Mongo adapter persist Owner using the existing version checks. Legacy reads default to blank without writes, and older edit clients omitting Owner preserve saved ownership. Explicit blank clears it. No migration, credential change or live data write is needed. Owner publication awaits approval for this change.
+The API and Mongo adapter persist Owner using the existing version checks. Legacy reads default to blank without writes, and older edit clients omitting Owner preserve saved ownership. Explicit blank clears it. No migration, credential change or live data write is needed. Owner was subsequently deployed; see the publication record above.
 
 ## Publication status — 14 October 2026
 

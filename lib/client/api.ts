@@ -1,3 +1,4 @@
+import { withWorkflow, type WorkflowCommand } from "../workflow";
 import { FIELDS, withCardDefaults, type Card, type Status } from "../board";
 import {
   summarizeCard,
@@ -55,8 +56,10 @@ export const loadBoard = async () => {
   return { ...board, cards: board.cards.map(summarizeCard) };
 };
 export const loadCard = async (id: string) =>
-  withCardDefaults(
-    (await request<CardResponse>(`${API}/${encodeURIComponent(id)}`)).card,
+  withWorkflow(
+    withCardDefaults(
+      (await request<CardResponse>(`${API}/${encodeURIComponent(id)}`)).card,
+    ),
   );
 
 export async function saveCard(card: EditorCard) {
@@ -90,6 +93,19 @@ export async function moveCard(
     await request<CardResponse>(`${API}/${encodeURIComponent(id)}`, {
       method: "PATCH",
       body: JSON.stringify({ status, expectedVersion }),
+    })
+  ).card;
+}
+
+export async function commandCard(
+  id: string,
+  expectedVersion: number,
+  command: WorkflowCommand,
+) {
+  return (
+    await request<CardResponse>(`${API}/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ expectedVersion, command }),
     })
   ).card;
 }

@@ -1,4 +1,13 @@
 import {
+  blankWorkflow,
+  withWorkflow,
+  transition,
+  WorkflowError,
+  type Workflow,
+  type WorkflowCommand,
+  type WorkflowEvent,
+} from "../workflow";
+import {
   Card,
   FIELDS,
   isStatus,
@@ -14,10 +23,18 @@ export type Activity = {
   action: "created" | "edited" | "moved" | "seeded";
   actor: "local-developer" | "sample-seed" | "public-demo-visitor";
   fields: string[];
+  workflow?: WorkflowEvent;
+  assignment?: {
+    owner: string;
+    worker: string;
+    workerKind: string;
+    reviewer: string;
+  };
   from?: string;
   to?: string;
 };
 export type RecordCard = Card & {
+  workflow: Workflow;
   boardId: string;
   version: number;
   createdAt: string;
@@ -46,6 +63,9 @@ export function parseCard(value: unknown): Card {
   const item = { ...object(value) };
   if (!("stopCondition" in item)) item.stopCondition = "";
   if (!("owner" in item)) item.owner = "";
+  if (!("worker" in item)) item.worker = "";
+  if (!("workerKind" in item)) item.workerKind = "human";
+  if (!("reviewer" in item)) item.reviewer = "";
   exact(item, ["id", "status", "sample", ...FIELDS]);
   if (
     typeof item.id !== "string" ||
@@ -63,6 +83,8 @@ export function parseCard(value: unknown): Card {
     title: card.title.trim(),
     summary: card.summary.trim(),
     owner: card.owner.trim().replace(/\s+/g, " "),
+    worker: card.worker.trim().replace(/\s+/g, " "),
+    reviewer: card.reviewer.trim().replace(/\s+/g, " "),
   };
 }
 export function version(value: unknown): number {
@@ -78,6 +100,7 @@ export function newRecord(
   const at = new Date().toISOString();
   return {
     ...withCardDefaults(card),
+    workflow: blankWorkflow(),
     boardId,
     version: 1,
     createdAt: at,
@@ -93,33 +116,120 @@ export function newRecord(
             ? "public-demo-visitor"
             : "local-developer",
         fields: [],
+        ...(card.owner || card.worker || card.reviewer
+          ? {
+              assignment: {
+                owner: card.owner ?? "",
+                worker: card.worker ?? "",
+                workerKind: card.workerKind ?? "human",
+                reviewer: card.reviewer ?? "",
+              },
+            }
+          : {}),
       },
     ],
   };
 }
-export function revision(
-  current: RecordCard,
-  patch: Card | { status: Card["status"] },
-): RecordCard {
-  current = withCardDefaults(current);
+export type CardPatch =
+  Card | { status: Card["status"] } | { command: WorkflowCommand };
+export function revision(current: RecordCard, patch: CardPatch): RecordCard {
+  current = withWorkflow(withCardDefaults(current));
+  if ("command" in patch) {
+    try {
+      const { workflow, status, event } = transition(current, patch.command);
+      const at = new Date().toISOString();
+      return {
+        ...current,
+        workflow,
+        status,
+        version: current.version + 1,
+        updatedAt: at,
+        activity: [
+          ...current.activity,
+          {
+            version: current.version + 1,
+            at,
+            action: "edited" as const,
+            actor: publicDemo()
+              ? ("public-demo-visitor" as const)
+              : ("local-developer" as const),
+            fields: ["workflow"],
+            from: current.status,
+            to: status,
+            workflow: event,
+          },
+        ].slice(-500),
+      };
+    } catch (error) {
+      if (error instanceof WorkflowError)
+        throw new ApiError(400, error.message, "WORKFLOW_INVALID");
+      throw error;
+    }
+  }
+  if (current.workflow.state !== "idle" && patch.status !== current.status)
+    throw new ApiError(
+      400,
+      "Use the workflow actions to move started work through review and completion.",
+      "WORKFLOW_INVALID",
+    );
   const at = new Date().toISOString();
   const fields = Object.keys(patch).filter(
     (key) =>
       patch[key as keyof typeof patch] !== current[key as keyof RecordCard],
   );
   if (fields.length === 0) return current;
+  const reopened = ["in_review", "approved"].includes(current.workflow.state);
   const moved = current.status !== patch.status;
+  const assignment =
+    fields.some((field) =>
+      ["owner", "worker", "workerKind", "reviewer"].includes(field),
+    ) && "owner" in patch
+      ? {
+          owner: patch.owner,
+          worker: patch.worker,
+          workerKind: patch.workerKind,
+          reviewer: patch.reviewer,
+        }
+      : undefined;
   const activity: Activity = {
     version: current.version + 1,
     at,
     action: fields.length === 1 && moved ? "moved" : "edited",
     actor: publicDemo() ? "public-demo-visitor" : "local-developer",
     fields,
-    ...(moved ? { from: current.status, to: patch.status } : {}),
+    ...(assignment ? { assignment } : {}),
+    ...(reopened
+      ? {
+          workflow: {
+            type: "brief_changed" as const,
+            name: "Board editor",
+            role: "human" as const,
+            attempt: current.workflow.attempt + 1,
+            note: "Card details changed. Previous evidence is retained in the timeline; submit fresh evidence for review.",
+          },
+        }
+      : {}),
+    ...(reopened
+      ? { from: current.status, to: "In Progress" }
+      : moved
+        ? { from: current.status, to: patch.status }
+        : {}),
   };
   return {
     ...current,
     ...patch,
+    ...(reopened
+      ? {
+          status: "In Progress" as const,
+          workflow: {
+            ...current.workflow,
+            state: "working" as const,
+            evidence: null,
+            feedback: "",
+            attempt: current.workflow.attempt + 1,
+          },
+        }
+      : {}),
     version: current.version + 1,
     updatedAt: at,
     activity: [...current.activity, activity].slice(-500),
