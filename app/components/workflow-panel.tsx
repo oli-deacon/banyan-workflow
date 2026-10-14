@@ -233,6 +233,7 @@ export function WorkflowPanel({
               <label>
                 Change summary
                 <textarea
+                  aria-label="Change summary"
                   value={summary}
                   maxLength={2000}
                   onChange={(e) => {
@@ -244,6 +245,7 @@ export function WorkflowPanel({
               <label>
                 Output links
                 <textarea
+                  aria-label="Output links"
                   value={links}
                   maxLength={20000}
                   onChange={(e) => {
@@ -256,6 +258,7 @@ export function WorkflowPanel({
               <label>
                 Test evidence
                 <textarea
+                  aria-label="Test evidence"
                   value={tests}
                   maxLength={2000}
                   onChange={(e) => {
@@ -315,6 +318,7 @@ export function WorkflowPanel({
                 <label>
                   {noteLabel}
                   <textarea
+                    aria-label={noteLabel}
                     value={note}
                     maxLength={2000}
                     onChange={(e) => {
