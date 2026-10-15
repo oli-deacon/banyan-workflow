@@ -1,8 +1,11 @@
 export const STATUSES = [
-  "To Do",
-  "In Progress",
-  "Ready for Review",
-  "Done",
+  "Discover",
+  "Decompose",
+  "Specify",
+  "Transform",
+  "Validate",
+  "Release & learn",
+  "Complete",
 ] as const;
 export type Status = (typeof STATUSES)[number];
 export const FIELDS = [
@@ -23,7 +26,7 @@ export type Card = { id: string; status: Status; sample: boolean } & Record<
 export function isStatus(value: unknown): value is Status {
   return STATUSES.includes(value as Status);
 }
-export function blankCard(status: Status = "To Do", id = ""): Card {
+export function blankCard(status: Status = "Discover", id = ""): Card {
   return {
     id,
     status,
@@ -65,7 +68,7 @@ export function validateCard(card: Card): string | null {
 }
 export const samples: Card[] = [
   {
-    ...blankCard("To Do", "sample-service-map"),
+    ...blankCard("Discover", "sample-service-map"),
     sample: true,
     title: "Map the legacy service boundaries",
     summary: "Find the seams before we start moving code.",
@@ -78,7 +81,7 @@ export const samples: Card[] = [
     outputs: "Expected: a service map and a short decision record.",
   },
   {
-    ...blankCard("To Do", "sample-contract-tests"),
+    ...blankCard("Discover", "sample-contract-tests"),
     sample: true,
     title: "Define API contract tests",
     summary: "Capture the behaviour consumers rely on.",
@@ -88,7 +91,7 @@ export const samples: Card[] = [
     constraints: "Keep existing response shapes stable.",
   },
   {
-    ...blankCard("In Progress", "sample-config"),
+    ...blankCard("Transform", "sample-config"),
     sample: true,
     title: "Separate configuration from application code",
     summary: "Make each environment explicit and predictable.",
@@ -101,7 +104,7 @@ export const samples: Card[] = [
     outputs: "Draft configuration schema.",
   },
   {
-    ...blankCard("Ready for Review", "sample-decision"),
+    ...blankCard("Validate", "sample-decision"),
     sample: true,
     title: "Review the migration decision record",
     summary: "Check the tradeoffs and rollback approach.",
@@ -112,7 +115,7 @@ export const samples: Card[] = [
     outputs: "Sample ADR outline: context, options, decision, consequences.",
   },
   {
-    ...blankCard("Done", "sample-baseline"),
+    ...blankCard("Complete", "sample-baseline"),
     sample: true,
     title: "Establish the modernization baseline",
     summary: "A shared starting point for the work ahead.",

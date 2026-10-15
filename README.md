@@ -2,7 +2,28 @@
 
 For new coding sessions, start with [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) for the dated decisions, architecture, verification and open ideas.
 
-A Next.js / React / TypeScript workflow board with a server-side API and the official MongoDB Node driver. The exact fixed columns remain **To Do**, **In Progress**, **Ready for Review**, **Done**. Cards support creation, editing, desktop drag/drop, a keyboard/touch Move control, a reading-first expandable detail panel, an explicit Edit action, and activity history. New cards start with title, summary and status, with optional grouped details. Save and move notifications are visible; moves offer version-checked Undo so newer changes cannot be overwritten.
+A Next.js / React / TypeScript AI-DLC workflow board with a server-side API and the official MongoDB Node driver. Work follows **Discover → Decompose → Specify → Transform → Validate → Release & learn → Complete**. Each column shows its lead and supporting agents, AI contribution, and the team specification’s exit condition. Card fields and activity history are preserved.
+
+New cards start in Discover. Use **Handoff** to review the saved evidence, confirm every criterion and approve the next stage. Forward moves cannot skip phases, and required evidence fields must be populated. These field checks do not establish that tests or security checks passed: the human reviewer verifies the evidence. Save edits before approving. Return cards to an earlier phase for rework after documenting what is needed in Progress & blockers. Forward moves offer version-checked Undo; later edits cannot be overwritten.
+
+Existing records are interpreted without a bulk database rewrite: To Do / pm-agent → Discover; architect-agent → Decompose; In Progress / developer-agent → Transform; Ready for Review / quality-agent / verifier-agent → Validate; Done → Complete. Historical events retain their original labels. The next saved change persists the current phase name. Legacy completion does not imply that the new gates were run retroactively. This board defines ownership and human handoffs; it does not execute agents.
+
+| Phase | Lead | Supporting agents | Exit condition |
+| --- | --- | --- | --- |
+| Discover | architect-agent | — | Evidence-backed baseline, with unresolved questions recorded |
+| Decompose | architect-agent | pm-agent | Humans approve boundaries and sequencing |
+| Specify | pm-agent | architect-agent, quality-agent | Approved modernization specification |
+| Transform | developer-agent | — | Candidate change passes defined checks |
+| Validate | quality-agent | verifier-agent | Independent evidence supports acceptance |
+| Release & learn | pm-agent | developer-agent, verifier-agent | Operational acceptance and verified rollback readiness |
+
+Complete is the terminal state after the Release & learn gate.
+
+Workflow definitions live in `lib/workflow.ts`, loosely inspired by the [AWS AI-DLC guide](https://github.com/awslabs/aidlc-workflows/blob/main/docs/guide/00-introduction.md) and tailored to the five project roles.
+
+## Agent specifications
+
+See the [modernization agent specifications](docs/agents/README.md) for phase ownership, responsibilities, domain boundaries, inputs, outputs, human-approved handoffs and rework routing for all five roles. Click a lead or supporting agent name on the board to open its specification in a side panel, including the shared handoff contract. The page loads the repository Markdown specifications at build time, so document changes appear in the next deployment. These define future agent behavior; they do not install or execute agents.
 
 ## Shared public demo
 
@@ -79,7 +100,7 @@ Seeding is explicit, not a side effect of loading the page in MongoDB mode. Exis
 - Synthetic seed IDs are stable. Seeding uses `$setOnInsert` with upsert and never resets edited or existing cards. Running the seed repeatedly is safe.
 - Moving a card changes workflow status plus its version/timestamp/history. No agent execution or harness state is inferred or launched.
 
-API routes: `GET/POST /api/boards/modernization/cards` and `GET/PATCH /api/boards/modernization/cards/:id`. The list returns compact summaries; the per-card GET returns full details and activity. Unchanged PATCH requests preserve the version, timestamp and history while still enforcing the expected version. PATCH accepts a complete `card` or a `status`, with `expectedVersion`. The server validates field types, title and size limits, status, HTTP(S) links, unknown fields and body size. IDs and board boundaries are checked; server metadata cannot be supplied through card payloads. The client retains a new card's ID on uncertain write retries and reports duplicate creation rather than silently creating another item.
+API routes: `GET/POST /api/boards/modernization/cards` and `GET/PATCH /api/boards/modernization/cards/:id`. The list returns compact summaries; the per-card GET returns full details and activity. Unchanged PATCH requests preserve the version, timestamp and history while still enforcing the expected version. PATCH accepts a complete `card` or a `status`, with `expectedVersion`. Stage changes use a separate status-only request with `approved: true`; the server checks saved evidence, adjacent forward routing and the reviewed version. Full-card edits cannot change stage. The server validates field types, title and size limits, status, HTTP(S) links, unknown fields and body size. IDs and board boundaries are checked; server metadata cannot be supplied through card payloads. The client retains a new card's ID on uncertain write retries and reports duplicate creation rather than silently creating another item.
 
 ## Access boundaries and future authentication
 

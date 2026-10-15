@@ -1,3 +1,4 @@
+import { transitionError } from "../workflow";
 import { isStatus } from "../board";
 import { ApiError, BOARD_ID, exact, object, parseCard, version } from "./model";
 import { getStore, storageMode, type Store } from "./store";
@@ -125,6 +126,8 @@ export async function handle(
     if (request.method === "POST") {
       exact(input, ["card"]);
       const card = parseCard(input.card);
+      if (card.status !== "Discover")
+        throw new ApiError(400, "New work starts with Discover.");
       if (card.sample)
         throw new ApiError(
           400,
@@ -136,7 +139,7 @@ export async function handle(
       );
     }
     if (request.method === "PATCH" && id) {
-      exact(input, ["card", "status", "expectedVersion"]);
+      exact(input, ["card", "status", "expectedVersion", "approved"]);
       const expected = version(input.expectedVersion);
       let patch;
       if ("card" in input) {
@@ -148,6 +151,17 @@ export async function handle(
         if (!isStatus(input.status))
           throw new ApiError(400, "Choose a valid status.");
         patch = { status: input.status };
+      }
+      const current = await store.get(board, id);
+      if (current.version !== expected)
+        throw new ApiError(409, "This card changed. Refresh and review the latest evidence before approving.", "VERSION_CONFLICT");
+      if (current.status !== patch.status) {
+        if ("card" in input)
+          throw new ApiError(400, "Save card edits first, then review the handoff.", "HANDOFF_REQUIRED");
+        if (input.approved !== true)
+          throw new ApiError(400, "Review and approve the handoff before changing stage.", "APPROVAL_REQUIRED");
+        const error = transitionError(current, patch.status);
+        if (error) throw new ApiError(400, error, "HANDOFF_BLOCKED");
       }
       return Response.json({
         card: await store.update(board, id, expected, patch),

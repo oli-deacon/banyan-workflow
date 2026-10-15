@@ -14,7 +14,7 @@ import {
 } from "../lib/server/store";
 
 const origin = "https://demo.example";
-const card = { ...blankCard("To Do", "demo-test"), title: "Synthetic demo" };
+const card = { ...blankCard("Discover", "demo-test"), title: "Synthetic demo", objective: "Outcome", context: "Inputs", constraints: "Scope", acceptance: "Checks", references: "https://example.com/baseline", outputs: "Baseline", progress: "Unknowns recorded" };
 Object.assign(process.env, {
   NODE_ENV: "production",
   BANYAN_ACCESS: "public-demo",
@@ -55,9 +55,9 @@ test("hosted demo persists shared edits, labels anonymous activity and rejects s
     "public-demo-visitor",
   );
   const results = await Promise.all(
-    ["Done", "In Progress"].map((status) =>
+    ["Decompose", "Decompose"].map((status) =>
       handle(
-        request("PATCH", { status, expectedVersion: 1 }),
+        request("PATCH", { approved: true, status, expectedVersion: 1 }),
         BOARD_ID,
         card.id,
         store,

@@ -79,7 +79,7 @@ export async function moveCard(
   return (
     await request<CardResponse>(`${API}/${encodeURIComponent(id)}`, {
       method: "PATCH",
-      body: JSON.stringify({ status, expectedVersion }),
+      body: JSON.stringify({ status, expectedVersion, approved: true }),
     })
   ).card;
 }

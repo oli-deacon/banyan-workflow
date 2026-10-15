@@ -1,3 +1,4 @@
+import { normalizeCard } from "../workflow";
 import { MongoClient, type Collection } from "mongodb";
 import { summarizeCard, type CardSummary } from "../card-types";
 import { type Card, samples } from "../board";
@@ -41,7 +42,7 @@ export class MemoryStore implements Store {
   async get(board: string, id: string) {
     const card = this.records.get(board + ":" + id);
     if (!card) throw missing();
-    return structuredClone(card);
+    return normalizeCard(structuredClone(card));
   }
   async create(board: string, card: Card, seed = false) {
     const key = board + ":" + card.id;
@@ -68,7 +69,7 @@ export class MemoryStore implements Store {
     const old = this.records.get(key);
     if (!old) throw missing();
     if (old.version !== expected) throw conflict();
-    const next = revision(old, patch);
+    const next = revision(normalizeCard(old), patch);
     this.records.set(key, next);
     return structuredClone(next);
   }
@@ -95,7 +96,7 @@ export class MongoStore implements Store {
         },
       )
       .sort({ createdAt: 1, id: 1 })
-      .toArray();
+      .toArray().then(cards => cards.map(normalizeCard));
   }
   async get(boardId: string, id: string) {
     const card = await this.collection.findOne(
@@ -103,7 +104,7 @@ export class MongoStore implements Store {
       { projection: { _id: 0 } },
     );
     if (!card) throw missing();
-    return card;
+    return normalizeCard(card);
   }
   async create(boardId: string, card: Card, seed = false) {
     const record = newRecord(card, boardId, seed);
@@ -159,7 +160,7 @@ export class MongoStore implements Store {
     );
     if (!old) throw missing();
     if (old.version !== expected) throw conflict();
-    const next = revision(old, patch);
+    const next = revision(normalizeCard(old), patch);
     const saved = await this.collection.findOneAndUpdate(
       { boardId, id, version: expected },
       { $set: next },

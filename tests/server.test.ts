@@ -11,8 +11,9 @@ import {
 import { MemoryStore, MongoStore, seed } from "../lib/server/store";
 import { handle } from "../lib/server/api";
 const card = {
-  ...blankCard("To Do", "test-card"),
+  ...blankCard("Discover", "test-card"),
   title: "Synthetic server test",
+  objective: "Outcome", context: "Inputs", constraints: "Scope", acceptance: "Checks", references: "https://example.com/baseline", outputs: "Baseline", progress: "Unknowns recorded",
 };
 function request(
   method: string,
@@ -58,7 +59,7 @@ test("API create, edit and move increment version with coherent activity", async
   );
   assert.equal(edit.status, 200);
   const move = await handle(
-    request("PATCH", { status: "Done", expectedVersion: 2 }),
+    request("PATCH", { approved: true, status: "Decompose", expectedVersion: 2 }),
     BOARD_ID,
     card.id,
     store,
@@ -66,21 +67,21 @@ test("API create, edit and move increment version with coherent activity", async
   const saved = (await move.json()).card;
   assert.equal(saved.version, 3);
   assert.equal(saved.summary, "Updated");
-  assert.equal(saved.status, "Done");
+  assert.equal(saved.status, "Decompose");
   assert.deepEqual(
     saved.activity.map((a: { action: string }) => a.action),
     ["created", "edited", "moved"],
   );
-  assert.equal(saved.activity[2].from, "To Do");
-  assert.equal(saved.activity[2].to, "Done");
+  assert.equal(saved.activity[2].from, "Discover");
+  assert.equal(saved.activity[2].to, "Decompose");
 });
 test("concurrent writes accept one version and explicitly reject stale edits", async () => {
   const store = new MemoryStore();
   await store.create(BOARD_ID, card);
   const results = await Promise.all(
-    ["Done", "In Progress"].map((status) =>
+    ["Decompose", "Decompose"].map((status) =>
       handle(
-        request("PATCH", { status, expectedVersion: 1 }),
+        request("PATCH", { approved: true, status, expectedVersion: 1 }),
         BOARD_ID,
         card.id,
         store,
@@ -97,19 +98,19 @@ test("seed is idempotent and never resets edited samples", async () => {
   await Promise.all([seed(store), seed(store)]);
   const initial = await store.list(BOARD_ID);
   assert.equal(initial.length, 5);
-  await store.update(BOARD_ID, initial[0].id, 1, { status: "Done" });
+  await store.update(BOARD_ID, initial[0].id, 1, { status: "Decompose" });
   await seed(store);
   const after = await store.list(BOARD_ID);
   assert.equal(after.length, 5);
   assert.equal(after[0].version, 2);
-  assert.equal(after[0].status, "Done");
+  assert.equal(after[0].status, "Decompose");
 });
 test("board boundaries prevent reads and mutations across boards", async () => {
   const store = new MemoryStore();
   await store.create("other-board", card);
   assert.equal((await store.list(BOARD_ID)).length, 0);
   await assert.rejects(
-    store.update(BOARD_ID, card.id, 1, { status: "Done" }),
+    store.update(BOARD_ID, card.id, 1, { status: "Decompose" }),
     (e) => e instanceof ApiError && e.status === 404,
   );
   assert.equal(
@@ -154,7 +155,7 @@ test("server validation rejects untrusted shapes, unsafe links, missing versions
   assert.equal(
     (
       await handle(
-        request("PATCH", { status: "Done" }),
+        request("PATCH", { approved: true, status: "Decompose" }),
         BOARD_ID,
         card.id,
         store,
@@ -268,14 +269,14 @@ test("Mongo adapter uses atomic board/id/version predicate; losing race adds no 
   const store = new MongoStore(collection);
   await store.create(BOARD_ID, card);
   const results = await Promise.allSettled([
-    store.update(BOARD_ID, card.id, 1, { status: "Done" }),
-    store.update(BOARD_ID, card.id, 1, { status: "In Progress" }),
+    store.update(BOARD_ID, card.id, 1, { status: "Decompose" }),
+    store.update(BOARD_ID, card.id, 1, { status: "Decompose" }),
   ]);
   assert.equal(results.filter((r) => r.status === "fulfilled").length, 1);
   assert.equal(saved!.version, 2);
   assert.equal(saved!.activity.length, 2);
   await assert.rejects(
-    store.update("other", card.id, 2, { status: "To Do" }),
+    store.update("other", card.id, 2, { status: "Discover" }),
     (e) => e instanceof ApiError && e.status === 404,
   );
 });
@@ -316,9 +317,9 @@ test("unchanged edits and moves preserve history and timestamps, but stale no-op
     assert.equal(response.status, 200);
     assert.deepEqual((await response.json()).card, original);
   }
-  await store.update(BOARD_ID, card.id, 1, { status: "Done" });
+  await store.update(BOARD_ID, card.id, 1, { status: "Decompose" });
   const stale = await handle(
-    request("PATCH", { status: "Done", expectedVersion: 1 }),
+    request("PATCH", { approved: true, status: "Decompose", expectedVersion: 1 }),
     BOARD_ID,
     card.id,
     store,
@@ -405,4 +406,39 @@ test("Mongo list projects out detail and activity fields at the database", async
     },
   } as unknown as Collection<RecordCard>;
   assert.deepEqual(await new MongoStore(collection).list(BOARD_ID), []);
+});
+
+test("handoffs require approval, evidence and sequential stages, including full edits", async () => {
+  const store = new MemoryStore();
+  await store.create(BOARD_ID, { ...card, context: "" });
+  const patch = (body: unknown) => handle(request("PATCH", body), BOARD_ID, card.id, store);
+  assert.equal((await patch({ status: "Decompose", expectedVersion: 1 })).status, 400);
+  assert.equal((await patch({ status: "Decompose", expectedVersion: 1, approved: true })).status, 400);
+  assert.equal((await patch({ card: { ...card, status: "Complete" }, expectedVersion: 1, approved: true })).status, 400);
+  assert.equal((await patch({ card, expectedVersion: 1 })).status, 200);
+  let version = 2;
+  const evidence = { ...card, outputs: "Reviewed artifacts", references: "https://example.com/pull/1", progress: "Checks passed" };
+  assert.equal((await patch({ card: evidence, expectedVersion: version++ })).status, 200);
+  for (const status of ["Decompose", "Specify", "Transform", "Validate", "Release & learn", "Complete"]) {
+    const result = await patch({ status, expectedVersion: version++, approved: true });
+    assert.equal(result.status, 200, await result.text());
+  }
+  assert.equal((await patch({ status: "Transform", expectedVersion: version++, approved: true })).status, 200);
+  assert.equal((await patch({ status: "Complete", expectedVersion: version, approved: true })).status, 400);
+  assert.equal((await handle(request("POST", { card: { ...card, id: "skip", status: "Complete" } }), BOARD_ID, undefined, store)).status, 400);
+});
+
+test("legacy Mongo cards normalize at read time and retain content and historical activity", async () => {
+  const legacy = { ...card, status: "Ready for Review", boardId: BOARD_ID, version: 4, activity: [{ from: "To Do", to: "Ready for Review" }] };
+  const collection = {
+    find: () => ({ sort: () => ({ toArray: async () => [legacy] }) }),
+    findOne: async () => legacy,
+  } as unknown as Collection<RecordCard>;
+  const store = new MongoStore(collection);
+  assert.equal((await store.list(BOARD_ID))[0].status, "Validate");
+  const loaded = await store.get(BOARD_ID, card.id);
+  assert.equal(loaded.status, "Validate");
+  assert.equal(loaded.objective, card.objective);
+  assert.deepEqual(loaded.activity, legacy.activity);
+  assert.equal(legacy.status, "Ready for Review");
 });

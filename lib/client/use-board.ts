@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Status } from "../board";
+import { STATUSES, type Status } from "../board";
 import {
   summarizeCard,
   type CardSummary,
@@ -154,39 +154,40 @@ export function useBoard(dragging: string | null) {
       setBusy(false);
     }
   }
-  async function move(id: string, status: Status, undoVersion?: number) {
+  async function move(id: string, status: Status, reviewVersion?: number, isUndo = false) {
     if (pending.current) return;
     const card = cards.find((item) => item.id === id);
-    if (!card || (card.status === status && undoVersion === undefined)) return;
+    if (!card || (card.status === status && !isUndo)) return;
     const retainFocus =
       document.activeElement?.getAttribute("data-move-id") === id;
     pending.current = true;
     readEpoch.current += 1;
     setBusy(true);
     try {
-      const saved = await moveCard(id, status, undoVersion ?? card.version);
+      const saved = await moveCard(id, status, reviewVersion ?? card.version);
       setCards((current) =>
         current.map((item) => (item.id === id ? summarizeCard(saved) : item)),
       );
       setWriteWarning("");
       setUndo(
-        undoVersion === undefined
+        !isUndo && STATUSES.indexOf(status) > STATUSES.indexOf(card.status)
           ? { id, status: card.status, version: saved.version }
           : null,
       );
       setSettled(id);
       setNotice(
-        undoVersion === undefined
-          ? status === "Done"
+        !isUndo
+          ? status === "Complete"
             ? `“${card.title}” is done. A little more clarity.`
             : `“${card.title}” moved to ${status}.`
           : `Move undone. “${card.title}” is back in ${status}.`,
       );
+      return true;
     } catch (error) {
       setNotice("");
       setUndo(null);
       setWriteWarning(
-        `${undoVersion === undefined ? "Move" : "Undo"} could not be completed. ${(error as Error).message}`,
+        `${!isUndo ? "Move" : "Undo"} could not be completed. ${(error as Error).message}`,
       );
     } finally {
       pending.current = false;

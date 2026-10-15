@@ -231,7 +231,7 @@ export function CardEditor({
                 className={`status-badge tone-${STATUSES.indexOf(initial.status)}`}
               >
                 <span className="status-dot" aria-hidden="true">
-                  {initial.status === "Done" ? "✓" : ""}
+                  {initial.status === "Complete" ? "✓" : ""}
                 </span>
                 {initial.status}
               </span>
@@ -311,17 +311,7 @@ export function CardEditor({
                     placeholder="A short description for the board."
                   />
                 </label>
-                <label className="status-field">
-                  Status
-                  <select
-                    value={draft.status}
-                    onChange={(event) => update("status", event.target.value)}
-                  >
-                    {STATUSES.map((status) => (
-                      <option key={status}>{status}</option>
-                    ))}
-                  </select>
-                </label>
+                <p className="status-field">Phase: <strong>{draft.status}</strong><br />Use the board’s handoff action to change stage.</p>
               </div>
               <button
                 className="detail-toggle"
@@ -395,7 +385,7 @@ export function CardEditor({
                 {[...initial.activity].reverse().map((event) => (
                   <li key={event.version}>
                     <span className="activity-marker" aria-hidden="true">
-                      {event.to === "Done"
+                      {(event.to === "Done" || event.to === "Complete")
                         ? "✓"
                         : event.action === "created" ||
                             event.action === "seeded"

@@ -1,3 +1,4 @@
+import { normalizeStatus } from "./workflow";
 import type { Card } from "./board";
 import type { RecordCard } from "./server/model";
 
@@ -22,5 +23,5 @@ export function summarizeCard({
   sample,
   version,
 }: CardSummary): CardSummary {
-  return { id, title, summary, status, sample, version };
+  return { id, title, summary, status: normalizeStatus(status), sample, version };
 }
