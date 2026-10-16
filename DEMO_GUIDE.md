@@ -6,7 +6,7 @@ This is an explicit simulation: fictional people, agent activity, decisions, tim
 
 ## Walkthrough
 
-The same fictional configuration unit moves through all six phases. Each phase shows incoming context, lead/supporting agent contributions, its exact board exit condition, and the human decision. Choose **Show [phase] evidence**, then **Review handoff**. Approval stays disabled until every criterion is checked. Cancel keeps the card in its current phase. No step advances automatically.
+The same fictional configuration unit moves through all six phases. Each phase shows incoming context, lead/supporting agent contributions, its exact board exit condition, and the human decision. Choose **Show [phase] evidence**, then **Review handoff**. Approval stays disabled until every criterion is checked. Cancel keeps the card in its current phase. No step advances automatically. Click an agent name under Agent contributions or Next to open its specification without leaving the walkthrough. The panel includes responsibilities, domain boundaries, inputs, outputs and handoff criteria; closing it preserves the current phase and prepared evidence.
 
 1. **Discover:** architect-agent maps configuration reads, dependencies and unknowns. Alex reviews the baseline and recorded questions before approving Decompose.
 2. **Decompose:** architect-agent defines unit boundaries; pm-agent sequences dependencies. Alex approves the boundary and order before Specify.

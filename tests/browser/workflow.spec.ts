@@ -267,6 +267,22 @@ for (const width of [390, 1440])
       }
       await page.getByRole("button", { name: `Show ${phase} evidence`, exact: true }).click();
       await expect(page.getByRole("region", { name: "Phase evidence" })).toContainText("SIMULATED");
+      const agentLinks = page.locator(".demo-contributions").getByRole("button");
+      for (const link of await agentLinks.all()) {
+        const name = await link.innerText();
+        await link.click();
+        const specification = page.getByRole("dialog");
+        await expect(specification.getByRole("heading", { name, exact: true })).toBeVisible();
+        await expect(specification.getByRole("heading", { name: "Handoff criteria", exact: true })).toHaveCount(1);
+        await specification.getByRole("button", { name: "Shared handoff contract", exact: true }).click();
+        await expect(specification.getByRole("heading", { name: "Phase ownership & handoffs", exact: true })).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(specification).toHaveCount(0);
+        await expect(link).toBeFocused();
+        await expect(page.locator("[aria-current=step]")).toHaveText(phase);
+        await expect(page.getByRole("region", { name: "Phase evidence" })).toContainText("SIMULATED");
+        await expect(page).toHaveURL(/\/demo$/);
+      }
       await page.getByRole("button", { name: /^Review handoff to/ }).click();
       const dialog = page.getByRole("dialog");
       await expect(dialog.getByRole("button", { name: "Approve handoff", exact: true })).toBeDisabled();
