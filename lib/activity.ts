@@ -1,18 +1,25 @@
+import { commandLabel } from "./workflow";
 import type { Activity } from "./server/model";
 
 const fieldNames: Record<string, string> = {
   title: "title",
   summary: "summary",
+  owner: "owner",
+  worker: "assigned worker",
+  workerKind: "worker type",
+  reviewer: "reviewer",
   objective: "objective",
   context: "input context",
   references: "reference links",
   constraints: "constraints",
+  stopCondition: "stop condition",
   acceptance: "acceptance criteria",
   progress: "progress & blockers",
   outputs: "outputs",
   sample: "sample label",
 };
 export function activityText(event: Activity): string {
+  if (event.workflow) return commandLabel[event.workflow.type];
   if (event.action === "seeded") return "Added this sample card";
   if (event.action === "created") return "Created this card";
   const changed = event.fields

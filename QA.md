@@ -1,3 +1,72 @@
+# Verification record
+
+## Guided demo banner removal — 14 October 2026
+
+- Removed only the prominent amber Simulation notice from `/demo` and unused CSS. Retained all other existing demo/simulation labels and behavior.
+- Lint, typecheck and production build pass. Guided walkthrough browser checks at 390px and 1440px verify banner absence, retained disclosures, Flanders handoffs, completion/reset, zero board API requests and no page errors/overflow. The initial mobile assertion incorrectly expected the existing desktop-only brand subtitle to be visible; corrected without changing responsive behavior.
+- No shared-card writes or production deployment. Included in the still-open draft PR #7.
+
+
+## Flanders guided review — 14 October 2026
+
+- The guided simulation now demonstrates Config Agent → Flanders first-pass review → Flanders auto-fix/recheck → Sam final human review. Finding and revised evidence events identify Flanders as Agent; the live-card human Reviewer model and API remain unchanged.
+- All 43 unit/API tests pass, including demo attribution/order, preserved initial state and human-only final approval. All 5 focused workflow browser tests pass, including the complete shared workflow and guided completion/reset at 390px and 1440px. Browser assertions check the current Flanders/Sam handoff, Agent timeline attribution, zero board requests, no page errors and no horizontal overflow. Mobile screenshot inspected.
+- Lint, typecheck and production build pass. React review: derived handoff text, existing functional state update, no new effects/dependencies; simulation override applies only in read-only mode. Initial regression caught that human resume increments work attempts; review routing now counts evidence submissions instead.
+- No live writes, credentials or real agent execution. Production publication pending approval.
+
+
+## Searchable role filters — 14 October 2026
+
+- Replaced Owner/Worker/Reviewer board selects with compact reusable searchable popovers: initials for humans, agent icons, explicit type labels, selected checkmarks, active green state and per-filter clearing. Same-name human/agent workers remain a single name filter with an honest Human / Agent label. Card assignment inputs remain free text. Reviewer now consistently narrows the visible board; Clear filters clears every role.
+- 42 unit/API tests pass. Full Chromium suite: 21 passing (18 existing plus 3 picker regressions). Coverage includes case-insensitive search, mixed worker types, selected state, clearing, Arrow/Enter/Escape focus return, long-list scrolling, Tab exit, outside-click dismissal, no results, no assignments, reviewer filtering and clearing. Mobile checks use a touch-enabled Chromium context and tap interactions at 390px.
+- Lint, typecheck and production build pass. Desktop and mobile popup screenshots were inspected. The initial new tests needed option-count assertions scoped to the listbox, and the mobile check exposed toolbar overflow; toolbar actions now wrap. The keyboard check exposed Chromium's implicit scroll-container tab stop, fixed with explicit tabindex=-1 because keyboard navigation belongs to the combobox. Popovers are bounded to the viewport and anchored above/below their trigger.
+- React review: no dependencies added; focus/listener effects are scoped to an open picker and cleaned up; derived filtered options stay out of state; clear/selection restores focus. Browser tests use synthetic routed fixtures and the existing isolated memory board. No database changes, migration, credentials or live card edits. Safari, Firefox, physical devices and screen-reader audits remain untested. Production publication awaits approval.
+
+## Human–agent demo workflow — 14 October 2026
+
+- Added declared human owner, Human/Agent worker, human reviewer, explicit start/handoff/resume/review/correction/approval, immutable-in-API timeline snapshots and attention filters. Existing columns remain unchanged. Started work cannot bypass review with Move, drag or a status PATCH. Editing submitted or approved work reopens it; earlier evidence remains in history.
+- `npm test`: **42 passing** unit/API tests. New coverage includes the entire command cycle and evidence history, invalid transitions, required roles/brief, invalid types/unsafe links/oversized events, injected state/actors, direct-move bypass attempts, cross-origin denial, simultaneous/stale writes, legacy omitted roles, Mongo defaults/persistence/atomic losing races, reviewer attention filters, isolated simulation replay, and backfill skipping started workflows.
+- `BANYAN_CHROMIUM_PATH=/usr/bin/chromium npm run test:browser`: **18 passing**. Full shared-card create with roles → start → question → decision → evidence → reviewer correction → resubmission → approval → reload. Filters and disabled move/drag checked. Stale workflow entries and failed writes preserve drafts; explicit reload/cancel and Escape behavior checked. Guided walkthrough completes/resets at 390px and 1440px with zero board API requests and no browser page errors.
+- The initial full browser run completed approval but used an exact Done text locator that excluded the decorative checkmark. The corrected status-badge assertion passes. Desktop attention-board, desktop/mobile guided-demo and mobile handoff screenshots were inspected; no horizontal overflow was observed in the tested views. Corrected a contradictory Saved footer while a workflow entry is unsaved. Final draft-state fix clears dirty state when entries are emptied; the focused regression also required stable explicit textarea labels when revisiting a typed decision. All five focused workflow browser tests passed after the fix.
+- Lint, TypeScript and production build pass. React review: components separated for workflow controls and timeline; no new effects or third-party dependencies, no server credentials imported into client code, command request locks and version checks retained, labelled fields/checkboxes and existing modal focus handling preserved. Board summaries omit detailed evidence/history.
+- Commands are capped at 12 KB to bound the latest-500-event history. Claims/test results are not independently verified; logical role names are declared and actual anonymous/local recorder is retained. This is not authenticated authorization or a tamper-proof audit archive.
+- All mutation tests use isolated memory storage or Mongo test doubles. No live sample edits, migrations, seeds, credentials or permission changes. `/demo` uses only page memory and cannot mutate shared cards. Safari, Firefox, physical devices and a screen-reader audit remain untested. No production deployment is part of implementation; approval is pending.
+
+## Card owner — 14 October 2026
+
+- Optional free-text Owner is available in create/edit, board summaries, reading details and activity. Blank/missing values display Unassigned; public-demo help asks for fictional names. Names are limited to 100 characters and whitespace is normalized on save.
+- `npm test`: 34 passing. Owner coverage includes API create/list/read/edit/clear, validation boundaries and types, legacy omission preserving saved owners, Mongo persistence/defaults and stale version rejection. The existing stop-condition backfill regression also verifies both missing and assigned owners are preserved.
+- `BANYAN_CHROMIUM_PATH=/usr/bin/chromium npm run test:browser`: 13 passing. The real memory API test creates/edits/reloads/clears ownership; legacy responses remain readable. Desktop 1440px and mobile 390px screenshots were inspected. The first owner test run exposed an exact accessible-name locator mismatch for the empty-summary placeholder; correcting the locator produced a clean full suite.
+- Lint, typecheck and production build passed. React review found no new effects, render loops or dependencies. All mutations used the isolated memory mock, with Mongo behavior covered by test doubles. No live writes, credentials, migration or production deployment were performed for Owner. Safari, Firefox and physical-device checks remain unperformed.
+- Prior publication update: board polish is deployed at main `4ed31d05ac2cc919b436e4f6815d7f114de3606c`. The parent independently verified all five hosted sample Stop Conditions after editing/reload at 23:24–23:27 UTC on 13 October. The old pending-backfill notes below are historical; no rerun or new database access is needed.
+
+## Board polish — 14 October 2026
+
+- Refined card spacing and typography; added subtle column surfaces, aligned desktop column heights, consistent count badges, toolbar/Add/Move interaction treatments and quieter completed cards with decorative SVG checks. Move arrows now use SVG, and coarse-pointer Move controls have 44px minimum targets.
+- 32 unit/API tests and all 12 existing Chromium browser regressions passed. Lint, typecheck and production build passed.
+- Focused mock-mode checks at 1440, 768 and 390px verified no horizontal overflow, distinct column surfaces, completion marks, accessible control names, keyboard focus, touch targets, drag/drop and Move/Undo (including completion-style updates). A second pass confirmed cursor glow, pointer reset, reduced motion, touch opening and card details remained functional. No browser page errors were observed; desktop/mobile screenshots were inspected.
+- All mutations used only the isolated memory mock. No live data changes or production deployment occurred during implementation. Safari, Firefox and physical-device checks remain unperformed.
+
+## Card Border Glow — 14 October 2026
+
+- Adapted React Bits Border Glow for the existing light board cards: cursor-directed mesh border, soft outer glow and restrained edge fill. Preserved card controls, desktop drag handlers, native focus outlines and responsive geometry. Upstream attribution/license retained in `THIRD_PARTY_NOTICES.md`; no runtime dependency added.
+- `npm test`: 32 passing; `npm run test:browser` with the system Chromium override: 12 passing. Lint, typecheck and production build passed.
+- Focused isolated-memory browser QA verified cursor direction changes, increased edge intensity, reset after leaving, keyboard focus/opening, Move and Undo, preference changes to reduced motion, touch opening and 390px layout without horizontal overflow. Desktop 1440px idle/hover screenshots and the mobile screenshot were inspected. No browser page errors were captured.
+- Cursor tracking is disabled for touch and reduced motion. A static mesh border accompanies focus; decorative layers cannot intercept controls. Pointer updates are batched to one animation frame and canceled on leave, drag and unmount.
+- Browser checks modified only the memory mock. No MongoDB or hosted card records were changed. Safari, Firefox and physical-device checks were not performed.
+
+## Stop Condition — 13 October 2026
+
+- Added optional Stop Condition to the shared model, create/edit Context, reading view, activity labels, typed client payloads, strict API validation and MongoDB serialization. Empty legacy records remain readable/editable; older clients omitting the field preserve existing values. This is descriptive context only.
+- `npm test`: **32 passing** unit/API tests. New coverage includes field create/edit/read/clear, omitted legacy payloads, invalid types and the 20,000-character boundary, Mongo legacy reads with no writes, persistence/version conflicts, and the targeted backfill's dry run, repeat runs, changed-context skips, collection selection and concurrent-write safeguards.
+- `npm run lint`, `npm run typecheck`, `npm run build`: passed.
+- `BANYAN_CHROMIUM_PATH=/usr/bin/chromium npm run test:browser`: **12 passing**. Chromium 154 was available in the coding environment; the Playwright browser download endpoint returned 403. The optional executable-path override supports this environment without changing the default Playwright browser elsewhere.
+- Browser coverage includes actual memory-API Stop Condition create/edit/reload and readable activity, a legacy detail response without the field, and reading/editing at 390px and 1440px without panel horizontal overflow. Screenshots under the ignored `test-results/` directory were visually inspected. All test mutations were in the isolated memory mock; no Brave or user-computer UI was used.
+- Corrected an existing browser-test text locator to scope its summary assertion to the dialog; the summary also appears on the underlying board. The final full suite passes.
+- The five repository samples have distinct proposed conditions. The new maintenance script defaults to dry run, requires an explicit approved collection target, skips changed sample context, uses atomic version/context/missing-field predicates, updates only Stop Condition and revision metadata, and never inserts/deletes cards.
+- **Live verification blocked:** this environment has no approved MongoDB configuration; the dry-run command exits safely without connecting or writing. The hosted API request returns HTTP 403 from the environment network path. Current live IDs/content could not be confirmed. Source sample content is the proposal, not proof of the live state.
+- No live backfill, seed, merge, credential/access changes or manual deployment was performed. `vercel.json` disables automatic deployments only for `feat/card-stop-condition`, so publishing this draft branch does not request a preview deployment. Main remains enabled; this branch-specific rule can be removed after publication approval. Before the hosted board reflects the change, approve publication, merge/deploy the code, inspect live sample contents and the targeted dry run using existing approved access, then approve/apply the demo-collection backfill. Changed samples require task-specific review.
+
 ## Review fixes and cleanup — 13 October 2026
 
 - Split the board presentation, card editor, board-data hook and typed API client. Removed the retired browser-storage codec and mutation helpers with their obsolete tests.
@@ -113,3 +182,9 @@ Evidence: `output/api-board-desktop.png` and `output/api-detail-activity.png`. T
 ## Limitations
 
 No Atlas setup blocker remains. Team authentication and board-membership authorization are still required before public/team use; production API access remains disabled. Safari, Firefox, a physical touch device and a screen-reader audit were not performed.
+
+## AI-DLC integration — 16 October 2026
+
+Reconciled the six phases plus Complete with main's assignments, Stop Condition, identity filters, evidence review, card styling and Flanders simulation. Work commands stay within a phase; forward handoffs require completed active review and saved phase evidence, reset local work state and preserve activity history. Legacy statuses normalize on read.
+
+Verification: 48 unit/API tests, lint, typecheck and production build passed. All 26 Chromium scenarios passed across the full run (25 passed) and focused stale-entry retry (1 passed after updating its phase fixture and error assertion). Desktop and mobile screenshots cover the merged board and agent specifications. Browser tests use isolated memory storage, not live MongoDB.

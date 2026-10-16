@@ -2,6 +2,64 @@
 
 **Snapshot: 13 October 2026, Melbourne (Australia/Melbourne).** This records agreed decisions and verified state at that date, not a promise that a preview process is still running.
 
+## Guided demo banner removal — 14 October 2026
+
+Removed the prominent amber “Simulation · fictional data.” banner and its unused CSS from `/demo` at the user’s request. Existing guided-demo header (desktop), Restart simulation control/confirmation, Fictional work item label, no-agent-execution text, simulated activity note and step/evidence disclosures remain unchanged. No workflow or shared-card changes. Included in draft PR #7; publication still pending.
+
+## Flanders guided demo — 14 October 2026
+
+The seven-step isolated walkthrough now routes Config Agent → Flanders (first-pass code review, auto-fix and recheck) → Sam Example (final human review). Flanders finds the missing timeout test; one simulated fix cycle resolves it before human review. Demo timeline events correctly attribute the finding and revised submission to Flanders as Agent. Shared-card roles, API and database are unchanged; no agent actually executes. Publication pending.
+
+PR #6 searchable filters was approved, merged at `9acc2e0f38e400a84ea4ad3d4cbde187a75b9fda` and deployed READY (`dpl_FLYSooVqsoMkYPsRymLRMhKsrQLu`). Production board/demo/API checks passed with five cards and no runtime errors found.
+
+## Searchable board filters prepared — 14 October 2026
+
+Owner, Worker and Reviewer filters now use a shared compact searchable picker with Human/Agent identity labels, initials/agent icons, selected checkmarks, clear buttons, no-match/unassigned-empty messages, keyboard navigation and touch targets. “Reviewing as” is renamed Reviewer; selecting it now narrows the board consistently with Owner and Worker, and Clear filters clears all three roles. The existing reviewer attention queue remains available. Same-name human/agent workers are honestly labelled Human / Agent and preserve the existing name-based matching semantics. Card assignment fields remain free text, with no API, storage or credential changes.
+
+Popup positioning is viewport bounded, opens above or below the trigger, closes on outside click/Tab departure/scroll/resize, and returns focus on selection/Escape. Long lists scroll through keyboard selection; the list itself is not an extra tab stop. Mobile toolbar actions now wrap instead of overflowing. This change was published through PR #6 as recorded above.
+
+The previous human–agent workflow was approved, merged as `abbab5cd83ca85773fc8c0d676b8eb8b22958fe0`, and deployed READY (`dpl_BpRghQJLVSmgAiBuEAL92ZHTkNHq`). The live board, `/demo` and API returned HTTP 200; all five sample revisions remained 2 and no runtime errors were found. The preparation notes below are historical.
+
+## Human–agent demo workflow prepared — 14 October 2026
+
+User authorized implementation of the five recommended demo capabilities: roles, handoffs, evidence/review, timeline and attention filters, plus an isolated guided simulation. Owner remains the accountable human. Worker is a declared Human/Agent label; Reviewer is a declared human. There are no authenticated roles, real agent execution or notifications.
+
+Shared cards now support explicit versioned commands: start, request_input, resume, submit_review, request_changes and approve. State is separate from columns (idle, working, awaiting_input, in_review, approved). Start requires roles/objective/acceptance/Stop Condition. Human questions, decisions, feedback and rationale are required. Review submission checks evidence shape, safe HTTP(S) links and all current acceptance criteria. Started cards cannot bypass review through direct Move/drag or edited status. Any submitted/approved card edit reopens work and clears current evidence; historical snapshots are retained. Unstarted legacy cards keep manual status controls.
+
+The API accepts commands separately from editable card fields, rejects injected state/history/actors, and uses the same board/id/version compare-and-set in MongoDB. Roles are normalized/defaulted; omitted legacy roles are preserved. Summaries project only workflow state, not evidence/history. Commands are bounded to 12 KB and history retains the latest 500 events. The existing Stop Condition backfill excludes role labels from task-context matching and skips started workflows; do not rerun it on the completed hosted samples.
+
+`/demo` is a browser-memory-only seven-step walkthrough using the shared transition rules. It makes no board API requests or writes, requires no credentials, and resets on reload/explicit restart. All names, decisions, times, tests and links are fictional. It demonstrates a pause, human decision, first evidence submission, reviewer correction, resubmission and approval. `DEMO_GUIDE.md` is the presenter script. Current live cards remain untouched. This workflow was subsequently deployed; see publication record above.
+
+Owner was approved and deployed from merge `cef6ab23b6994ff49bbd3f2ff19e6bcfc26bc3a7`, deployment `dpl_JB73Bum3vSF5Mk73ZTzB2dLSDWN4`; the canonical live API returned 200 with owner fields and all five existing sample revisions preserved. Historical Owner preparation notes below are superseded by that deployment.
+
+## Card owner — 14 October 2026
+
+Optional `owner` is a free-text responsibility label limited to 100 characters, with whitespace normalized on API saves. It appears in the basic create/edit form, board footer, reading view and activity history. Blank/missing owners display Unassigned. Samples remain unassigned; no people or business responsibilities were invented. Public-demo help requests fictional names. This does not add user accounts, permissions or notifications.
+
+The API and Mongo adapter persist Owner using the existing version checks. Legacy reads default to blank without writes, and older edit clients omitting Owner preserve saved ownership. Explicit blank clears it. No migration, credential change or live data write is needed. Owner was subsequently deployed; see the publication record above.
+
+## Publication status — 14 October 2026
+
+Board polish was subsequently approved, merged as `4ed31d05ac2cc919b436e4f6815d7f114de3606c`, and verified READY in production (`dpl_EHMrfgCtR6k5XvjbFUuYRdWqjA79`). All five hosted sample Stop Conditions were filled through the normal card editor and independently verified after reload on 13 October at 23:24–23:27 UTC (14 October Melbourne). **That sample update is complete; do not rerun the backfill or request new database access.** The preparation notes below are historical.
+
+## Board polish prepared — 14 October 2026
+
+Cards have roomier summary/footer spacing, softer corners and refined title/summary hierarchy. Columns have subtle stage-specific surfaces and aligned desktop heights; counts use consistent badges. Toolbar, Add card and Move controls share restrained hover/focus treatments. Move targets are at least 44px high for coarse pointers, with SVG arrows independent of installed fonts. Done cards use a quieter surface and a decorative checkmark that updates with moves and Undo. The existing cursor glow and reduced-motion handling remain intact. This is a presentation-only change; no data or workflow semantics changed. This polish was subsequently published; see publication status above.
+
+## Card Border Glow — 14 October 2026
+
+Board cards now use a cursor-directed mesh-gradient border and soft edge glow adapted from React Bits Border Glow. The original light card layout remains. Pointer work is batched to animation frames without React renders; leaving, dragging and unmounting clear pending glow work. Touch and reduced-motion users do not get cursor tracking, and keyboard focus receives a static colored border with existing focus outlines intact. All decorative layers ignore pointer input. No dependency or data changes. Attribution and the upstream license are in `THIRD_PARTY_NOTICES.md`.
+
+Stop Condition PR #1 was subsequently approved by the user, merged as `fdcb335155a7284ae4cde02e70842b6d8e8b8a6e`, and deployed READY to production. The five live sample Stop Conditions were subsequently filled and verified as recorded above. Historical preparation notes below describe the earlier state.
+
+## Stop Condition change prepared — 13 October 2026
+
+Optional `stopCondition` is included in shared fields, blank cards, create/edit Context, reading view, activity labels, API validation and MongoDB records. It describes when to pause for human input; it does not implement agent execution. Legacy missing fields normalize to blank without a read-time write; older PATCH clients omitting the field preserve saved values. Explicit empty strings clear it. The detail limit remains 20,000 characters.
+
+The five source samples now contain task-specific conditions. `scripts/backfill-stop-conditions.ts` is a dry-run-first maintenance command with an explicit collection target and no upsert. It only fills missing/empty values on known sample IDs with matching source task context, and atomically checks version/context/missing field before writing the field and revision history. Changed tasks require review. See README for commands and outcomes.
+
+No live records were read or updated during this change: the demo API is inaccessible from this environment (HTTP 403), and no approved MongoDB configuration is present. Publication and live sample application remain separate pending steps; do not merge to main or apply the backfill without publication approval. Current safeguards and collection separation are unchanged. `vercel.json` disables automatic deployments only for `feat/card-stop-condition`, so publishing this draft branch does not request a preview deployment. Main remains enabled; this branch-specific rule can be removed after publication approval.
+
 ## Public demo update — 13 October 2026
 
 The user authorized a Vercel-hosted, shared saved board with no login, exclusively for synthetic data. The live demo is https://banyan-workflow.vercel.app, verified READY with browser create/edit/move, fresh-tab persistence, live conflict checks and unchanged local-board checksum. All 22 tests, lint, type checking and production build passed; see QA.md for details. The Vercel project is `banyan-workflow`. GitHub integration is connected to `oli-deacon/banyan-workflow`, with `main` as the production branch and automatic domain assignment enabled. Pushes to `main` now trigger production deployment. Fork protection is enabled; preview environments have no production database credential.

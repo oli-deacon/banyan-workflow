@@ -1,4 +1,5 @@
 "use client";
+import type { WorkflowCommand } from "../workflow";
 
 import { useEffect, useRef, useState } from "react";
 import { STATUSES, type Status } from "../board";
@@ -7,7 +8,7 @@ import {
   type CardSummary,
   type EditorCard,
 } from "../card-types";
-import { loadBoard, loadCard, saveCard, moveCard } from "./api";
+import { loadBoard, loadCard, saveCard, moveCard, commandCard } from "./api";
 
 export function useBoard(dragging: string | null) {
   const [cards, setCards] = useState<CardSummary[]>([]);
@@ -208,6 +209,32 @@ export function useBoard(dragging: string | null) {
     return () => clearTimeout(timer);
   }, [settled]);
 
+  async function act(
+    id: string,
+    expectedVersion: number,
+    command: WorkflowCommand,
+  ) {
+    if (pending.current)
+      throw new Error(
+        "Another request is still running. Please try again in a moment.",
+      );
+    pending.current = true;
+    readEpoch.current += 1;
+    setBusy(true);
+    try {
+      const saved = await commandCard(id, expectedVersion, command);
+      setCards((current) =>
+        current.map((item) => (item.id === id ? summarizeCard(saved) : item)),
+      );
+      setUndo(null);
+      setNotice("");
+      setWriteWarning("");
+      return saved;
+    } finally {
+      pending.current = false;
+      setBusy(false);
+    }
+  }
   async function getCard(id: string) {
     const card = await loadCard(id);
     setCards((current) =>
@@ -235,6 +262,7 @@ export function useBoard(dragging: string | null) {
     save,
     move,
     getCard,
+    act,
     dismissNotice: () => {
       setNotice("");
       setUndo(null);

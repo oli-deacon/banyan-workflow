@@ -11,7 +11,8 @@
     "test": "tsx --test tests/*.test.ts",
     "dev:mock": "BANYAN_LOCAL_API=1 BANYAN_STORAGE=mock next dev --hostname 127.0.0.1",
     "seed": "tsx scripts/seed.ts",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "backfill:stop-conditions": "tsx scripts/backfill-stop-conditions.ts"
   },
   "dependencies": {
     "mongodb": "^7.7.0",

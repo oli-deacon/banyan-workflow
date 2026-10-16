@@ -5,7 +5,10 @@ import { useRef, useState } from "react";
 import { blankCard, STATUSES, type Card, type Status } from "@/lib/board";
 import type { CardSummary, EditorCard } from "@/lib/card-types";
 import { useBoard } from "@/lib/client/use-board";
-import { STAGES, nextStage } from "@/lib/workflow";
+import { useCardGlow } from "@/lib/client/use-card-glow";
+import { needsAttention, type Attention } from "@/lib/attention";
+import { IdentityFilter, identityOptions } from "./identity-filter";
+import { workStateLabel, STAGES, nextStage } from "@/lib/workflow";
 import type { RecordCard } from "@/lib/server/model";
 import { HandoffDialog } from "./handoff-dialog";
 import { CardEditor } from "./card-editor";
@@ -13,6 +16,11 @@ import { CardEditor } from "./card-editor";
 import { AgentSpecification } from "./agent-specification";
 
 export default function Board({ specifications }: { specifications: Record<string, string> }) {
+  const [ownerFilter, setOwnerFilter] = useState("");
+  const [workerFilter, setWorkerFilter] = useState("");
+  const [reviewerView, setReviewerView] = useState("");
+  const [attention, setAttention] = useState<Attention>("all");
+  const { trackGlow, resetGlow } = useCardGlow();
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const agentOpener = useRef<HTMLButtonElement | null>(null);
   function agentButton(agent: string) {
@@ -44,8 +52,20 @@ export default function Board({ specifications }: { specifications: Record<strin
     save,
     move,
     getCard,
+    act,
     dismissNotice,
   } = useBoard(null);
+  const scoped = cards.filter(
+    (card) =>
+      (!ownerFilter || card.owner === ownerFilter) &&
+      (!workerFilter || card.worker === workerFilter) &&
+      (!reviewerView || card.reviewer === reviewerView),
+  );
+  const visible = scoped.filter((card) =>
+    needsAttention(card, attention, reviewerView),
+  );
+  const filtered =
+    !!ownerFilter || !!workerFilter || !!reviewerView || attention !== "all";
   async function review(id: string, target: Status) {
     if (openingRef.current) return;
     openingRef.current = true;
@@ -109,6 +129,7 @@ export default function Board({ specifications }: { specifications: Record<strin
           <span>{ready ? `${cards.length} cards` : "Loading…"}</span>
         </div>
         <div className="workspace-actions">
+          <Link className="button-link" href="/demo">Try the guided demo</Link>
           <button disabled={busy} onClick={() => void refresh()}>
             {busy ? "Working…" : "Refresh board"}
           </button>
@@ -140,6 +161,75 @@ export default function Board({ specifications }: { specifications: Record<strin
           <strong>Public demo · Synthetic data only.</strong> Anyone can view
           and edit. No personal, customer or confidential information.
         </p>
+      )}
+      {ready && (
+        <section className="attention-bar" aria-label="Work attention filters">
+          <div className="attention-tabs">
+            {(
+              [
+                ["all", "All work"],
+                ["input", "Needs human input"],
+                ["review", "Awaiting review"],
+                ["mine", "Ready for my review"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                aria-pressed={attention === value}
+                disabled={value === "mine" && !reviewerView}
+                onClick={() => setAttention(value)}
+              >
+                {label}{" "}
+                <span>
+                  {
+                    scoped.filter((card) =>
+                      needsAttention(card, value, reviewerView),
+                    ).length
+                  }
+                </span>
+              </button>
+            ))}
+          </div>
+          <div className="filter-controls">
+            <span className="filter-caption">Filter</span>
+            <IdentityFilter
+              label="Owner"
+              value={ownerFilter}
+              options={identityOptions(cards, "owner")}
+              onChange={setOwnerFilter}
+            />
+            <IdentityFilter
+              label="Worker"
+              value={workerFilter}
+              options={identityOptions(cards, "worker")}
+              onChange={setWorkerFilter}
+            />
+            <IdentityFilter
+              label="Reviewer"
+              value={reviewerView}
+              options={identityOptions(cards, "reviewer")}
+              onChange={(value) => {
+                setReviewerView(value);
+                if (!value && attention === "mine") setAttention("all");
+              }}
+            />
+            {filtered && (
+              <button
+                onClick={() => {
+                  setOwnerFilter("");
+                  setWorkerFilter("");
+                  setReviewerView("");
+                  setAttention("all");
+                }}
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+          <p className="field-hint" role="status">
+            Showing {visible.length} of {cards.length} cards.
+          </p>
+        </section>
       )}
       {[readWarning, writeWarning, openError].filter(Boolean).map((warning) => (
         <div key={warning} className="warning" role="alert">
@@ -180,7 +270,7 @@ export default function Board({ specifications }: { specifications: Record<strin
       ) : (
         <div className="board" aria-label="Workflow board">
           {STATUSES.map((status, index) => {
-            const items = cards.filter((card) => card.status === status);
+            const items = visible.filter((card) => card.status === status);
             return (
               <section
                 key={status}
@@ -200,9 +290,12 @@ export default function Board({ specifications }: { specifications: Record<strin
                 <div className="card-list">
                   {items.map((card) => (
                     <article
-                      className={`card ${settled === card.id ? "settled" : ""}`}
+                      onPointerMove={trackGlow}
+                      onPointerLeave={resetGlow}
+                      className={`card ${card.status === "Complete" ? "card-complete" : ""} ${settled === card.id ? "settled" : ""}`}
                       key={card.id}
                     >
+                      <span className="card-edge-light" aria-hidden="true" />
                       <button
                         className="card-open"
                         aria-busy={opening === card.id}
@@ -215,10 +308,41 @@ export default function Board({ specifications }: { specifications: Record<strin
                             "Add a summary to give this work context."}
                         </span>
                       </button>
+                      {card.workState !== "idle" && (
+                        <span
+                          className={`work-state card-work-state state-${card.workState}`}
+                        >
+                          {workStateLabel[card.workState]}
+                        </span>
+                      )}
+                      {(card.worker || card.reviewer) && (
+                        <p className="card-roles">
+                          {card.worker && (
+                            <span>
+                              {card.workerKind === "agent" ? "Agent" : "Human"}:{" "}
+                              {card.worker}
+                            </span>
+                          )}
+                          {card.reviewer && (
+                            <span>Review: {card.reviewer}</span>
+                          )}
+                        </p>
+                      )}
                       <footer className="card-footer">
-                        {!card.sample && (
-                          <span className="sample-label">WORK ITEM</span>
-                        )}
+                        <div className="card-meta">
+                          {!card.sample && (
+                            <span className="sample-label">WORK ITEM</span>
+                          )}
+                          <span className="card-owner">
+                            <span className="owner-label">Owner</span>
+                            <span
+                              className="owner-name"
+                              title={card.owner || "Unassigned"}
+                            >
+                              {card.owner || "Unassigned"}
+                            </span>
+                          </span>
+                        </div>
                         <label className="move-control">
                           <span>Handoff</span>
                           <select
@@ -240,7 +364,7 @@ export default function Board({ specifications }: { specifications: Record<strin
                     </article>
                   ))}
                 </div>
-                {items.length === 0 && <p className="empty-column">No cards</p>}
+                {items.length === 0 && <p className="empty-column">{filtered ? "No matching cards." : "No cards"}</p>}
                 {status === "Discover" && <button
                   disabled={busy || opening !== null}
                   className="add-card"
@@ -290,6 +414,7 @@ export default function Board({ specifications }: { specifications: Record<strin
           latest={cards.find((card) => card.id === editor.id)}
           now={now}
           onLoadLatest={getCard}
+          onAction={act}
           onClose={close}
           onSave={async (card) => {
             await save(card);

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { activityText, actorText, relativeTime } from "@/lib/activity";
+import { ActivityTimeline } from "./activity-timeline";
+import { WorkflowPanel } from "./workflow-panel";
+import type { WorkflowCommand } from "@/lib/workflow";
 import { STATUSES, safeLink, validateCard, type Card } from "@/lib/board";
 import type { EditorCard, CardSummary } from "@/lib/card-types";
 import type { RecordCard } from "@/lib/server/model";
@@ -22,6 +24,11 @@ const detailFields = [
     "Acceptance criteria",
     "What must be true for this work to be complete?",
   ],
+  [
+    "stopCondition",
+    "Stop Condition",
+    "When should work pause and request human input?",
+  ],
   ["progress", "Progress & blockers", "What changed? What needs attention?"],
   ["outputs", "Outputs", "Decisions, deliverables and results."],
 ] as const;
@@ -34,6 +41,7 @@ export function CardEditor({
   onLoadLatest,
   onClose,
   onSave,
+  onAction,
 }: {
   publicDemo: boolean;
   initial: EditorCard;
@@ -42,7 +50,15 @@ export function CardEditor({
   onLoadLatest: (id: string) => Promise<RecordCard>;
   onClose: () => void;
   onSave: (card: EditorCard) => Promise<void>;
+  onAction: (
+    id: string,
+    version: number,
+    command: WorkflowCommand,
+  ) => Promise<RecordCard>;
 }) {
+  const [workflowDirty, setWorkflowDirty] = useState(false);
+  const [workflowBusy, setWorkflowBusy] = useState(false);
+  const workflowBusyRef = useRef(false);
   const [initial, setInitial] = useState(opened);
   const [confirmLatest, setConfirmLatest] = useState(false);
   const [draft, setDraft] = useState(opened);
@@ -58,9 +74,10 @@ export function CardEditor({
   const dialog = useRef<HTMLDialogElement>(null);
   const title = useRef<HTMLInputElement>(null);
   const [loadingLatest, setLoadingLatest] = useState(false);
-  const dirty = JSON.stringify(draft) !== JSON.stringify(initial);
+  const dirty =
+    workflowDirty || JSON.stringify(draft) !== JSON.stringify(initial);
   function requestClose() {
-    if (savingRef.current || loadingLatest) return;
+    if (savingRef.current || workflowBusyRef.current || loadingLatest) return;
     if (!dirty || window.confirm("Discard your unsaved changes?")) onClose();
   }
   useEffect(() => {
@@ -124,7 +141,8 @@ export function CardEditor({
             if (!draft.title.trim()) title.current?.focus();
             return;
           }
-          if (savingRef.current || loadingLatest) return;
+          if (savingRef.current || workflowBusyRef.current || loadingLatest)
+            return;
           savingRef.current = true;
           setSaving(true);
           setError("");
@@ -163,7 +181,7 @@ export function CardEditor({
             </button>
             <button
               type="button"
-              disabled={saving || loadingLatest}
+              disabled={saving || loadingLatest || workflowBusy}
               aria-label="Close details"
               onClick={requestClose}
             >
@@ -171,7 +189,10 @@ export function CardEditor({
             </button>
           </div>
         </header>
-        <fieldset disabled={saving || loadingLatest} className="detail-body">
+        <fieldset
+          disabled={saving || loadingLatest || workflowBusy}
+          className="detail-body"
+        >
           {newer && (
             <div className="update-banner" role="status">
               <strong>A newer version is available.</strong>
@@ -194,6 +215,7 @@ export function CardEditor({
                     setInitial(card);
                     setDraft(card);
                     setConfirmLatest(false);
+                    setWorkflowDirty(false);
                     setError("");
                   } catch (error) {
                     setError((error as Error).message);
@@ -235,6 +257,31 @@ export function CardEditor({
                 </span>
                 {initial.status}
               </span>
+              <p className="reading-owner">
+                <span>Owner</span> {initial.owner || "Unassigned"}
+              </p>
+              {initial.version && (
+                <WorkflowPanel
+                  key={initial.version}
+                  card={initial as RecordCard}
+                  disabled={newer}
+                  onDirtyChange={setWorkflowDirty}
+                  onBusyChange={(value) => {
+                    workflowBusyRef.current = value;
+                    setWorkflowBusy(value);
+                  }}
+                  onAction={async (command) => {
+                    const saved = await onAction(
+                      initial.id,
+                      initial.version!,
+                      command,
+                    );
+                    setInitial(saved);
+                    setDraft(saved);
+                    setWorkflowDirty(false);
+                  }}
+                />
+              )}
               {initial.summary && (
                 <p className="reading-summary">{initial.summary}</p>
               )}
@@ -245,6 +292,7 @@ export function CardEditor({
                   "context",
                   "references",
                   "constraints",
+                  "stopCondition",
                   "progress",
                   "outputs",
                 ] as const
@@ -288,6 +336,15 @@ export function CardEditor({
             </div>
           ) : (
             <>
+              {(initial as RecordCard).workflow &&
+                ["in_review", "approved"].includes(
+                  (initial as RecordCard).workflow.state,
+                ) && (
+                  <p className="warning">
+                    Saving card changes reopens work and requires fresh evidence
+                    and review. Previous submissions remain in the timeline.
+                  </p>
+                )}
               <div className="detail-intro">
                 <label>
                   Title <span className="required">Required</span>
@@ -311,6 +368,56 @@ export function CardEditor({
                     placeholder="A short description for the board."
                   />
                 </label>
+                <label>
+                  Owner
+                  <input
+                    aria-label="Owner"
+                    aria-describedby="owner-hint"
+                    value={draft.owner}
+                    onChange={(event) => update("owner", event.target.value)}
+                    maxLength={100}
+                    placeholder="Unassigned"
+                    autoComplete="off"
+                  />
+                  <span id="owner-hint" className="field-hint">
+                    {publicDemo
+                      ? "Use a fictional name for this public demo. Leave blank for unassigned."
+                      : "The human accountable for the outcome. Leave blank for unassigned."}
+                  </span>
+                </label>
+                <label>
+                  Assigned worker
+                  <input
+                    aria-label="Assigned worker"
+                    value={draft.worker}
+                    maxLength={100}
+                    placeholder="Unassigned"
+                    onChange={(event) => update("worker", event.target.value)}
+                  />
+                </label>
+                <label>
+                  Worker type
+                  <select
+                    aria-label="Worker type"
+                    value={draft.workerKind}
+                    onChange={(event) =>
+                      update("workerKind", event.target.value)
+                    }
+                  >
+                    <option value="human">Human</option>
+                    <option value="agent">Agent</option>
+                  </select>
+                </label>
+                <label>
+                  Reviewer
+                  <input
+                    aria-label="Reviewer"
+                    value={draft.reviewer}
+                    maxLength={100}
+                    placeholder="Human reviewer"
+                    onChange={(event) => update("reviewer", event.target.value)}
+                  />
+                </label>
                 <p className="status-field">Phase: <strong>{draft.status}</strong><br />Use the board’s handoff action to change stage.</p>
               </div>
               <button
@@ -327,7 +434,10 @@ export function CardEditor({
                 {(
                   [
                     ["Purpose", ["objective", "acceptance"]],
-                    ["Context", ["context", "references", "constraints"]],
+                    [
+                      "Context",
+                      ["context", "references", "constraints", "stopCondition"],
+                    ],
                     ["Progress", ["progress", "outputs"]],
                   ] as const
                 ).map(([group, keys]) => (
@@ -342,6 +452,14 @@ export function CardEditor({
                           <label key={key}>
                             {label}
                             <textarea
+                              aria-label={
+                                key === "stopCondition" ? label : undefined
+                              }
+                              aria-describedby={
+                                key === "stopCondition"
+                                  ? "stop-condition-hint"
+                                  : undefined
+                              }
                               rows={key === "references" ? 2 : 3}
                               maxLength={20000}
                               value={draft[key]}
@@ -350,6 +468,16 @@ export function CardEditor({
                               }
                               placeholder={placeholder}
                             />
+                            {key === "stopCondition" && (
+                              <span
+                                id="stop-condition-hint"
+                                className="field-hint"
+                              >
+                                Defines when to pause and request human input.
+                                This is workflow context; it does not run or
+                                stop an agent.
+                              </span>
+                            )}
                             {key === "references" && (
                               <span className="field-hint">
                                 One full http:// or https:// URL per line.
@@ -365,56 +493,15 @@ export function CardEditor({
             </>
           )}
           {initial.activity && (
-            <details className="activity">
-              <summary>
-                Activity history{" "}
-                <span>
-                  {initial.activity.length}{" "}
-                  {initial.activity.length === 1 ? "event" : "events"}
-                </span>
-              </summary>
-              <p className="activity-note">
-                {publicDemo
-                  ? "Visitors are anonymous; entries may be from different people."
-                  : "Changes saved to this card."}{" "}
-                {initial.activity.length === 500
-                  ? "Showing the latest 500 events."
-                  : ""}
-              </p>
-              <ol>
-                {[...initial.activity].reverse().map((event) => (
-                  <li key={event.version}>
-                    <span className="activity-marker" aria-hidden="true">
-                      {(event.to === "Done" || event.to === "Complete")
-                        ? "✓"
-                        : event.action === "created" ||
-                            event.action === "seeded"
-                          ? "+"
-                          : "↗"}
-                    </span>
-                    <div>
-                      <strong>{activityText(event)}</strong>
-                      <p>
-                        {actorText(event.actor)} ·{" "}
-                        <time
-                          dateTime={event.at}
-                          title={new Date(event.at).toLocaleString()}
-                        >
-                          {relativeTime(event.at, now)}
-                        </time>
-                      </p>
-                      <details className="event-details">
-                        <summary>Details</summary>
-                        <p>
-                          {new Date(event.at).toLocaleString()} · Revision{" "}
-                          {event.version}
-                        </p>
-                      </details>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </details>
+            <ActivityTimeline
+              activity={initial.activity}
+              now={now}
+              publicDemo={publicDemo}
+              expanded={
+                (initial as RecordCard).workflow?.state !== undefined &&
+                (initial as RecordCard).workflow?.state !== "idle"
+              }
+            />
           )}
         </fieldset>
         <footer className="detail-footer">
@@ -424,15 +511,17 @@ export function CardEditor({
             </p>
           )}
           <span className="save-hint">
-            {editing
-              ? dirty
-                ? "Unsaved changes"
-                : "Save when you’re ready"
-              : "Saved to the board"}
+            {workflowDirty
+              ? "Unsaved workflow entry · save or cancel it before editing."
+              : editing
+                ? dirty
+                  ? "Unsaved changes"
+                  : "Save when you’re ready"
+                : "Saved to the board"}
           </span>
           <button
             type="button"
-            disabled={saving || loadingLatest}
+            disabled={saving || loadingLatest || workflowBusy}
             onClick={requestClose}
           >
             {editing ? "Cancel" : "Close"}
@@ -443,6 +532,7 @@ export function CardEditor({
               ref={editButton}
               className="primary"
               type="button"
+              disabled={workflowBusy || workflowDirty}
               onClick={() => {
                 setEditing(true);
                 requestAnimationFrame(() => title.current?.focus());

@@ -1,7 +1,7 @@
-import { normalizeCard } from "../workflow";
+import { normalizeCard, withWorkflow } from "../workflow";
 import { MongoClient, type Collection } from "mongodb";
 import { summarizeCard, type CardSummary } from "../card-types";
-import { type Card, samples } from "../board";
+import { type Card, samples, withCardDefaults } from "../board";
 import { collectionName, publicDemo } from "./access";
 import {
   ApiError,
@@ -10,6 +10,7 @@ import {
   newRecord,
   revision,
   type RecordCard,
+  type CardPatch,
 } from "./model";
 export interface Store {
   checkDemoWrite?: () => Promise<void>;
@@ -20,7 +21,7 @@ export interface Store {
     boardId: string,
     id: string,
     expected: number,
-    patch: Card | { status: Card["status"] },
+    patch: CardPatch,
   ): Promise<RecordCard>;
 }
 const missing = () => new ApiError(404, "Card not found.", "NOT_FOUND");
@@ -59,12 +60,7 @@ export class MemoryStore implements Store {
     this.records.set(key, record);
     return structuredClone(record);
   }
-  async update(
-    board: string,
-    id: string,
-    expected: number,
-    patch: Card | { status: Card["status"] },
-  ) {
+  async update(board: string, id: string, expected: number, patch: CardPatch) {
     const key = board + ":" + id;
     const old = this.records.get(key);
     if (!old) throw missing();
@@ -80,7 +76,7 @@ export class MongoStore implements Store {
     public checkDemoWrite?: () => Promise<void>,
   ) {}
   async list(boardId: string) {
-    return this.collection
+    const cards = await this.collection
       .find<CardSummary>(
         { boardId },
         {
@@ -89,6 +85,11 @@ export class MongoStore implements Store {
             id: 1,
             title: 1,
             summary: 1,
+            owner: 1,
+            worker: 1,
+            workerKind: 1,
+            reviewer: 1,
+            "workflow.state": 1,
             status: 1,
             sample: 1,
             version: 1,
@@ -96,7 +97,8 @@ export class MongoStore implements Store {
         },
       )
       .sort({ createdAt: 1, id: 1 })
-      .toArray().then(cards => cards.map(normalizeCard));
+      .toArray();
+    return cards.map(summarizeCard);
   }
   async get(boardId: string, id: string) {
     const card = await this.collection.findOne(
@@ -104,7 +106,7 @@ export class MongoStore implements Store {
       { projection: { _id: 0 } },
     );
     if (!card) throw missing();
-    return normalizeCard(card);
+    return normalizeCard(withWorkflow(withCardDefaults(card)));
   }
   async create(boardId: string, card: Card, seed = false) {
     const record = newRecord(card, boardId, seed);
@@ -152,7 +154,7 @@ export class MongoStore implements Store {
     boardId: string,
     id: string,
     expected: number,
-    patch: Card | { status: Card["status"] },
+    patch: CardPatch,
   ) {
     const old = await this.collection.findOne(
       { boardId, id },
@@ -167,7 +169,7 @@ export class MongoStore implements Store {
       { returnDocument: "after", projection: { _id: 0 } },
     );
     if (!saved) throw conflict();
-    return saved;
+    return withWorkflow(withCardDefaults(saved));
   }
 }
 export async function seed(store: Store) {

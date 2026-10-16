@@ -1,5 +1,11 @@
-import { FIELDS, type Card, type Status } from "../board";
-import type { BoardResponse, CardResponse, EditorCard } from "../card-types";
+import { withWorkflow, type WorkflowCommand } from "../workflow";
+import { FIELDS, withCardDefaults, type Card, type Status } from "../board";
+import {
+  summarizeCard,
+  type BoardResponse,
+  type CardResponse,
+  type EditorCard,
+} from "../card-types";
 
 const API = "/api/boards/modernization/cards";
 
@@ -45,9 +51,16 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   }
 }
 
-export const loadBoard = () => request<BoardResponse>(API);
+export const loadBoard = async () => {
+  const board = await request<BoardResponse>(API);
+  return { ...board, cards: board.cards.map(summarizeCard) };
+};
 export const loadCard = async (id: string) =>
-  (await request<CardResponse>(`${API}/${encodeURIComponent(id)}`)).card;
+  withWorkflow(
+    withCardDefaults(
+      (await request<CardResponse>(`${API}/${encodeURIComponent(id)}`)).card,
+    ),
+  );
 
 export async function saveCard(card: EditorCard) {
   const existing = card.version !== undefined;
@@ -80,6 +93,19 @@ export async function moveCard(
     await request<CardResponse>(`${API}/${encodeURIComponent(id)}`, {
       method: "PATCH",
       body: JSON.stringify({ status, expectedVersion, approved: true }),
+    })
+  ).card;
+}
+
+export async function commandCard(
+  id: string,
+  expectedVersion: number,
+  command: WorkflowCommand,
+) {
+  return (
+    await request<CardResponse>(`${API}/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ expectedVersion, command }),
     })
   ).card;
 }

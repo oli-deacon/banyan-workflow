@@ -48,7 +48,7 @@ export function HandoffDialog({ card, target, onClose, onApprove }: {
             </details>
           ))}
         </div>
-        {error && <p className="warning" role="alert">{error} Close this review and edit the card first.</p>}
+        {error && <p className="warning" role="alert">{error} Close this review and resolve the requirement in the card first.</p>}
         {failed && <p className="warning" role="alert">The handoff could not be confirmed. Close this review, refresh the board and review the latest card before retrying.</p>}
         <fieldset disabled={busy || !!error || failed} className="handoff-checks">
           <legend>{returning ? "Rework confirmation" : "Handoff criteria"}</legend>

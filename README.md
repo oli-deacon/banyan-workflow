@@ -89,6 +89,28 @@ npm run seed
 
 Seeding is explicit, not a side effect of loading the page in MongoDB mode. Existing cards are never overwritten. A connection error remains visible; the app never silently falls back to browser or mock storage. No network access changes are automated.
 
+## Stop Condition and existing samples
+
+Cards include an optional **Stop Condition** under Context in the create/edit template and in the reading view when filled. It defines when to pause and request human input. It is descriptive workflow context; no agent execution is implemented. Like other detail fields it accepts up to 20,000 characters. Legacy cards read as blank; older clients that omit the field preserve an existing saved value.
+
+New synthetic samples include task-specific conditions. Existing MongoDB samples require a separate, targeted backfill after the field is deployed. Do not reseed the board to update them. With the existing approved MongoDB configuration, first run:
+
+```sh
+npm run backfill:stop-conditions -- --collection=cards_public_demo
+```
+
+This is a read-only dry run. Review the outcomes, then, only when live updates are approved:
+
+```sh
+npm run backfill:stop-conditions -- --collection=cards_public_demo --apply
+```
+
+The database is fixed to `banyan_workflow`. The collection must be explicitly selected; `--collection=cards` targets the separate local board and must not be used for the hosted demo. This command does not use `BANYAN_ACCESS` to infer its target, create indexes, change access, or configure credentials.
+
+Only the five stable sample IDs in `lib/board.ts` are considered. Missing cards are never inserted. Existing nonempty values (including whitespace or malformed values) are preserved. Cards must still be marked as samples and have unchanged title, summary and detail context; changed tasks return `review-changed-context` for human review. Status moves are preserved. Each update atomically checks board, ID, version, task context and missing/empty Stop Condition, sets only this field plus version/timestamp/history, and records a **Banyan sample** edit. Concurrent changes return `conflict`; rerunning is safe, including after a partial failure. Review/conflict outcomes exit with code 2; configuration/connection failures exit with code 1. The command bypasses visitor API rate counters and is for approved maintenance only.
+
+The hosted backfill has **not** been run from this environment. No MongoDB credential is available here, and the live API cannot be read from this environment (HTTP 403). Recheck actual live sample contents before applying; source samples are not evidence that live records remain unchanged.
+
 ## Storage model and write protocol
 
 - Fixed isolated database: `banyan_workflow`.
@@ -100,7 +122,7 @@ Seeding is explicit, not a side effect of loading the page in MongoDB mode. Exis
 - Synthetic seed IDs are stable. Seeding uses `$setOnInsert` with upsert and never resets edited or existing cards. Running the seed repeatedly is safe.
 - Moving a card changes workflow status plus its version/timestamp/history. No agent execution or harness state is inferred or launched.
 
-API routes: `GET/POST /api/boards/modernization/cards` and `GET/PATCH /api/boards/modernization/cards/:id`. The list returns compact summaries; the per-card GET returns full details and activity. Unchanged PATCH requests preserve the version, timestamp and history while still enforcing the expected version. PATCH accepts a complete `card` or a `status`, with `expectedVersion`. Stage changes use a separate status-only request with `approved: true`; the server checks saved evidence, adjacent forward routing and the reviewed version. Full-card edits cannot change stage. The server validates field types, title and size limits, status, HTTP(S) links, unknown fields and body size. IDs and board boundaries are checked; server metadata cannot be supplied through card payloads. The client retains a new card's ID on uncertain write retries and reports duplicate creation rather than silently creating another item.
+API routes: `GET/POST /api/boards/modernization/cards` and `GET/PATCH /api/boards/modernization/cards/:id`. The list returns compact summaries; the per-card GET returns full details and activity. Unchanged PATCH requests preserve the version, timestamp and history while still enforcing the expected version. PATCH accepts a complete `card`, a phase `status` with `approved: true`, or a workflow `command`, with `expectedVersion`. Phase handoffs check saved evidence and sequential forward routing. The server validates field types, title and size limits, status, HTTP(S) links, unknown fields and body size. IDs and board boundaries are checked; server metadata cannot be supplied through card payloads. The client retains a new card's ID on uncertain write retries and reports duplicate creation rather than silently creating another item.
 
 ## Access boundaries and future authentication
 
@@ -134,3 +156,5 @@ npm run test:browser
 - `QA.md`: observed checks and live-Atlas limitations.
 
 Public source repository: https://github.com/oli-deacon/banyan-workflow. Publishing the source does not deploy the application or include local credentials or live database records. The public demo is authorized for synthetic testing. No real personal data or agent harness is included.
+
+Work/review states run within the current phase. Approving evidence does not advance the phase; use the human-approved Handoff action. Changing phase resets the work state and retains prior evidence in activity history.
