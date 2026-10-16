@@ -6,13 +6,16 @@ This is an explicit simulation: fictional people, agent activity, decisions, tim
 
 ## Walkthrough
 
-1. **Delegate bounded work.** Alex Example is the accountable human. Config Agent is assigned the configuration refactor; Flanders always performs the first-pass code review and auto-fix loop; Sam Example is the final human reviewer. Open the task brief to show objective, constraints, acceptance criteria and Stop Condition.
-2. **Pause for a decision.** The agent asks whether an unresolved local timeout should use a default. Point out that Transform and Awaiting human input describe different things: board stage and work state.
-3. **Record the human decision.** Alex allows a fictional local-only default while keeping production explicit. The question and decision remain in history.
-4. **Hand off to Flanders.** Show the illustrative change summary, output links, test report and checks against each acceptance criterion. Checked boxes are claims requiring review; Banyan does not independently verify the evidence.
-5. **Flanders finds a gap.** The code review agent identifies a missing test of the local timeout default. The task returns to Working within Transform with specific feedback.
-6. **Flanders auto-fixes, rechecks and hands off.** The revised evidence includes the additional test. This example resolves in one cycle before Sam receives it for final human review. Pause for Alex if a fix needs a human decision or repeated attempts make no progress. Expand both submission events in Activity history to compare them.
-7. **Human final review and approval.** After Flanders’ pass, Sam records the rationale. Approved means review completed within Transform. The phase stays Transform until a separate human-approved handoff; no code is merged or deployed.
+The same fictional configuration unit moves through all six phases. Each phase shows incoming context, lead/supporting agent contributions, its exact board exit condition, and the human decision. Choose **Show [phase] evidence**, then **Review handoff**. Approval stays disabled until every criterion is checked. Cancel keeps the card in its current phase. No step advances automatically.
+
+1. **Discover:** architect-agent maps configuration reads, dependencies and unknowns. Alex reviews the baseline and recorded questions before approving Decompose.
+2. **Decompose:** architect-agent defines unit boundaries; pm-agent sequences dependencies. Alex approves the boundary and order before Specify.
+3. **Specify:** pm-agent drafts behavior and scope, architect-agent defines the contract, and quality-agent designs tests. Alex resolves the local timeout default and approves the specification before Transform.
+4. **Transform:** developer-agent implements the bounded change. The detailed sequence pauses over an outdated note, records Alex’s clarification, then goes through Flanders’ review, finding and fix loop. Sam reviews the revised evidence. A separate phase handoff confirms the candidate passes defined checks before Validate.
+5. **Validate:** quality-agent independently compares behavior, performance and data outcomes; verifier-agent reviews code, standards and security. Sam reviews independent acceptance evidence before Release & learn. Failed evidence would return work to Transform or Specify.
+6. **Release & learn:** pm-agent coordinates operational acceptance and learning, developer-agent prepares rollout/rollback instructions, and verifier-agent checks rollback readiness. Alex approves Complete after reviewing fictional rehearsal results. No actual release occurs.
+
+The timeline retains all six human-approved phase handoffs and their evidence, plus the detailed Transform decisions and review events. **Restart simulation** returns to Discover after confirmation. Shared cards are never changed.
 
 ## Try the shared workflow with a synthetic card
 

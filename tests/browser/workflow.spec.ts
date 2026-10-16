@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
-import { FIELDS } from "../../lib/board";
-import { demoCard, demoSteps } from "../../lib/demo-scenario";
+import { STATUSES, FIELDS } from "../../lib/board";
+import { demoCard } from "../../lib/demo-scenario";
+import { phaseTransformSteps } from "../../lib/phase-demo";
 const API = "/api/boards/modernization/cards";
 async function create(page: Page) {
   await page.goto("/");
@@ -253,41 +254,31 @@ for (const width of [390, 1440])
       if (request.url().includes("/api/boards/")) apiRequests++;
     });
     await page.goto("/demo");
-    await expect(
-      page.getByText("Simulation · fictional data.", { exact: true }),
-    ).toHaveCount(0);
-    await expect(page.getByText("/ guided demo", { exact: true })).toHaveCount(1);
-    if (width === 1440) await expect(page.getByText("/ guided demo", { exact: true })).toBeVisible();
-    await expect(page.getByText("FICTIONAL WORK ITEM", { exact: true })).toBeVisible();
-    await expect(page.getByText(/No agent is connected or executed/)).toBeVisible();
-    await expect(page.getByText(/Simulated events/)).toBeVisible();
-    await expect(page.getByText(/Config Agent → Flanders/)).toBeVisible();
-    for (const [index, step] of demoSteps.entries()) {
-      await page
-        .getByRole("button", { name: step.button, exact: true })
-        .click();
-      if (index === 3)
-        await expect(page.getByText(/Next: Flanders performs/)).toBeVisible();
-      if (index === 4) {
-        await expect(page.getByText(/Next: Flanders auto-fixes/)).toBeVisible();
-        await expect(
-          page.locator(".activity").getByText(/Flanders · Agent/),
-        ).toHaveCount(1);
+    await expect(page.getByText(/Simulation · fictional data and evidence/)).toBeVisible();
+    for (const phase of STATUSES.slice(0, -1)) {
+      await expect(page.locator("[aria-current=step]")).toHaveText(phase);
+      await expect(page.getByRole("heading", { name: "Agent contributions" })).toBeVisible();
+      if (phase === "Transform") {
+        for (const step of phaseTransformSteps) {
+          await page.getByRole("button", { name: step.button, exact: true }).click();
+          await expect(page.locator("[aria-current=step]")).toHaveText("Transform");
+        }
+        await expect(page.locator(".activity").getByText(/Flanders · Agent/)).toHaveCount(2);
       }
-      if (index === 5) {
-        await expect(page.getByText(/Next: Sam Example reviews/)).toBeVisible();
-        await expect(
-          page.locator(".activity").getByText(/Flanders · Agent/),
-        ).toHaveCount(2);
-      }
+      await page.getByRole("button", { name: `Show ${phase} evidence`, exact: true }).click();
+      await expect(page.getByRole("region", { name: "Phase evidence" })).toContainText("SIMULATED");
+      await page.getByRole("button", { name: /^Review handoff to/ }).click();
+      const dialog = page.getByRole("dialog");
+      await expect(dialog.getByRole("button", { name: "Approve handoff", exact: true })).toBeDisabled();
+      await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+      await expect(page.locator("[aria-current=step]")).toHaveText(phase);
+      await page.getByRole("button", { name: /^Review handoff to/ }).click();
+      for (const box of await dialog.getByRole("checkbox").all()) await box.check();
+      await dialog.getByRole("button", { name: "Approve handoff", exact: true }).click();
+      await expect(dialog).toHaveCount(0);
     }
-    await expect(
-      page.getByRole("heading", { name: "Phase review approved", exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByText("Submitted evidence for review", { exact: true }),
-    ).toHaveCount(2);
-    await expect(page.locator("[aria-current=step]")).toHaveText("Transform");
+    await expect(page.getByRole("heading", { name: "Operationally accepted" })).toBeVisible();
+    await expect(page.locator("[aria-current=step]")).toHaveText("Complete");
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
@@ -302,7 +293,7 @@ for (const width of [390, 1440])
       .getByRole("button", { name: "Restart simulation", exact: true })
       .click();
     await expect(
-      page.getByRole("button", { name: demoSteps[0].button, exact: true }),
+      page.getByRole("button", { name: "Show Discover evidence", exact: true }),
     ).toBeVisible();
     expect(apiRequests).toBe(0);
     expect(errors).toEqual([]);

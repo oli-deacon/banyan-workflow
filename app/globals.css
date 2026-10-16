@@ -1746,3 +1746,9 @@ fieldset.detail-body {
     font-size: 16px;
   }
 }
+
+.demo-contributions { padding-left: 20px; line-height: 1.65; }
+.demo-contributions li + li { margin-top: 18px; }
+.demo-contributions p { margin: 4px 0 0; }
+.demo-evidence, .demo-transform { margin: 24px 0; padding-top: 18px; border-top: 1px solid var(--line); line-height: 1.65; }
+.demo-evidence button, .demo-transform button { white-space: normal; text-align: left; }
